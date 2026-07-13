@@ -106,17 +106,17 @@ class TestMultiFleXiClient:
         # Setup mocks
         mock_api_client = MagicMock()
         mock_api_client_class.return_value.__enter__.return_value = mock_api_client
-        
+
         mock_app_api = Mock()
         mock_response = Mock()
         mock_response.to_dict.return_value = {"apps": [{"id": 1, "name": "test"}]}
-        mock_app_api.get_apps.return_value = mock_response
-        
+        mock_app_api.list_apps.return_value = mock_response
+
         with patch('multiflexi_client.AppApi', return_value=mock_app_api):
             result = client.get_apps()
-        
+
         assert result == {"apps": [{"id": 1, "name": "test"}]}
-        mock_app_api.get_apps.assert_called_once_with("json", limit=None)
+        mock_app_api.list_apps.assert_called_once_with("json", limit=None)
     
     @patch('multiflexi_client.ApiClient')
     def test_get_apps_api_error(self, mock_api_client_class, client):
@@ -126,8 +126,8 @@ class TestMultiFleXiClient:
         mock_api_client_class.return_value.__enter__.return_value = mock_api_client
         
         mock_app_api = Mock()
-        mock_app_api.get_apps.side_effect = ApiException(status=500, reason="Server Error")
-        
+        mock_app_api.list_apps.side_effect = ApiException(status=500, reason="Server Error")
+
         with patch('multiflexi_client.AppApi', return_value=mock_app_api):
             result = client.get_apps()
         
@@ -153,22 +153,41 @@ class TestMultiFleXiClient:
         assert result == {"id": 1, "name": "test"}
         mock_app_api.get_app_by_id.assert_called_once_with(1, "json", limit=None)
     
+    def test_create_job_not_supported(self, client):
+        """create_job is a documented no-op: multiflexi-client 1.1.0's
+        create/update job endpoint has no request-body parameter, so job_data
+        can never reach the server. It must fail loudly instead of silently
+        creating an empty job."""
+        result = client.create_job({"app_id": 1, "company_id": 1, "name": "test"})
+
+        assert result["error"] is True
+        assert result["reason"] == "not_supported_by_client_sdk"
+
     @patch('multiflexi_client.ApiClient')
-    def test_create_job_success(self, mock_api_client_class, client):
-        """Test successful create_job call."""
-        # Setup mocks
+    def test_get_job_status_derives_from_job(self, mock_api_client_class, client):
+        """get_job_status has no dedicated per-job endpoint on the real API;
+        it derives status from the Job's begin/end/exitcode fields."""
         mock_api_client = MagicMock()
         mock_api_client_class.return_value.__enter__.return_value = mock_api_client
-        
+
         mock_job_api = Mock()
         mock_response = Mock()
-        mock_response.to_dict.return_value = {"id": 1, "app_id": 1, "company_id": 1}
-        mock_job_api.add_job.return_value = mock_response
-        
+        mock_response.to_dict.return_value = {
+            "id": 1,
+            "begin": "2026-01-01T00:00:00Z",
+            "end": "2026-01-01T00:01:00Z",
+            "exitcode": 0,
+        }
+        mock_job_api.getjob_by_id.return_value = mock_response
+
         with patch('multiflexi_client.JobApi', return_value=mock_job_api):
-            with patch('multiflexi_client.Job') as mock_job_class:
-                result = client.create_job({"app_id": 1, "company_id": 1, "name": "test"})
-        
-        assert result == {"id": 1, "app_id": 1, "company_id": 1}
-        mock_job_class.assert_called_once_with(app_id=1, company_id=1, name="test")
-        mock_job_api.add_job.assert_called_once()
+            result = client.get_job_status(1)
+
+        assert result == {
+            "job_id": 1,
+            "status": "success",
+            "begin": "2026-01-01T00:00:00Z",
+            "end": "2026-01-01T00:01:00Z",
+            "exitcode": 0,
+        }
+        mock_job_api.getjob_by_id.assert_called_once_with(1, "json")

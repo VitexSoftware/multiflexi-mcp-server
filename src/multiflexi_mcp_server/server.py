@@ -5,7 +5,7 @@ import logging
 import os
 from typing import Any, Dict, List, Optional, Union
 
-from mcp.server import Server
+from mcp.server import NotificationOptions, Server
 from mcp.server.models import InitializationOptions
 from mcp.server.stdio import stdio_server
 from mcp.types import (
@@ -404,12 +404,12 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
         )]
 
 
-async def main():
-    """Main entry point for the MultiFlexi MCP Server."""    
+async def run_server() -> None:
+    """Run the MultiFlexi MCP Server over stdio."""
     logger.info(f"Starting MultiFlexi MCP Server")
     logger.info(f"Host: {config.host}")
     logger.info(f"Authentication: {'enabled' if config.has_auth() else 'disabled'}")
-    
+
     async with stdio_server() as (read_stream, write_stream):
         await app.run(
             read_stream,
@@ -418,13 +418,26 @@ async def main():
                 server_name="multiflexi-mcp-server",
                 server_version="0.1.0",
                 capabilities=app.get_capabilities(
-                    notification_options=None,
+                    notification_options=NotificationOptions(),
                     experimental_capabilities={}
                 ),
             ),
         )
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Synchronous entry point used by the ``multiflexi-mcp-server`` console script.
+
+    The generated console-script wrapper calls ``main()`` directly (it does not
+    await it), so this must not itself be a coroutine function -- previously
+    ``main`` was ``async def``, which meant running ``multiflexi-mcp-server``
+    just printed an unawaited-coroutine RuntimeWarning and exited immediately
+    without starting the server.
+    """
     import asyncio
-    asyncio.run(main())
+
+    asyncio.run(run_server())
+
+
+if __name__ == "__main__":
+    main()

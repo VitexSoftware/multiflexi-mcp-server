@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Console script entry point (`multiflexi-mcp-server`) was `async def main()`, which the
+  generated script called without awaiting -- it printed an unawaited-coroutine warning
+  and exited immediately without ever starting the server. `main()` is now a sync wrapper
+  around `asyncio.run(run_server())`.
+- `MultiFleXiClient.get_configuration()` constructed `multiflexi_client.Configuration`,
+  which resolves to an unrelated domain model (app configuration record: id/app_id/name/value)
+  due to a name collision in `multiflexi_client`'s top-level exports, not the API connection
+  settings class. Every API call failed with a pydantic `ValidationError` as soon as
+  `username`/`password` were assigned. Now imports `multiflexi_client.configuration.Configuration`
+  explicitly.
+- `client.py` called API methods that do not exist on `multiflexi-client` 1.1.0
+  (`AppApi.get_apps`, `JobApi.get_jobs`/`add_job`/`get_jobs_status`,
+  `CompanyApi.get_companies`, `UserApi.get_users`, `RuntemplateApi.get_runtemplates`/
+  `get_runtemplate_by_id`/`update_runtemplate_by_id`, `GdprApi.get_data_export_status`),
+  so every tool and resource crashed against the real API. Renamed to the real methods
+  (`list_apps`, `listjobs`, `list_companies`, `list_users`, `list_run_templates`,
+  `get_run_template_by_id`, `update_run_template_by_id`) and fixed `RequestDataExportPostRequest`
+  usage.
+- `get_job_status` now derives status from `Job.begin`/`end`/`exitcode` -- the real API
+  has no per-job status endpoint (`DefaultApi.get_jobs_status` returns aggregate stats
+  across all jobs, not one job).
+- `create_job` now returns an explicit `not_supported_by_client_sdk` error instead of
+  silently creating an empty job: `multiflexi-client` 1.1.0's create/update job endpoint
+  (`JobApi.setjob_by_id`) has no request-body parameter, so job data could never reach
+  the server.
+
 ### Planned
 - OAuth2 authentication support
 - Connection pooling for better performance

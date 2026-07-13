@@ -6,7 +6,17 @@ from unittest.mock import Mock, patch, AsyncMock, MagicMock
 
 from mcp.types import TextContent
 
-from multiflexi_mcp_server.server import app, list_resources, read_resource, list_tools, call_tool
+import inspect
+
+from multiflexi_mcp_server.server import app, list_resources, read_resource, list_tools, call_tool, main
+
+
+def test_main_is_sync_entry_point():
+    """The `multiflexi-mcp-server` console script calls main() without awaiting
+    it, so main must be a plain sync function (previously it was `async def`,
+    which meant the console script printed an unawaited-coroutine
+    RuntimeWarning and exited immediately without starting the server)."""
+    assert not inspect.iscoroutinefunction(main)
 
 
 class TestMCPServer:
@@ -18,8 +28,8 @@ class TestMCPServer:
         resources = await list_resources()
         
         assert len(resources) == 5
-        resource_uris = [r.uri for r in resources]
-        
+        resource_uris = [str(r.uri) for r in resources]
+
         assert "multiflexi://apps" in resource_uris
         assert "multiflexi://jobs" in resource_uris
         assert "multiflexi://companies" in resource_uris
