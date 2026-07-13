@@ -1,0 +1,111 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multiflexi-mcp-server"
+version = "0.1.0"
+description = "MCP Server for MultiFlexi API integration"
+authors = [
+    { name = "CyberVitexus", email = "info@vitexsoftware.cz" }
+]
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+keywords = ["mcp", "multiflexi", "model-context-protocol", "api", "automation", "jobs"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Internet :: WWW/HTTP",
+    "Typing :: Typed",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "multiflexi-client>=1.1.0",
+    "pydantic>=2.0.0",
+    "python-dateutil>=2.8.0",
+    "urllib3>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.5.0",
+    "ruff>=0.0.291",
+]
+
+[project.urls]
+Homepage = "https://github.com/VitexSoftware/multiflexi-mcp-server"
+Documentation = "https://github.com/VitexSoftware/multiflexi-mcp-server/blob/main/README.md"
+Repository = "https://github.com/VitexSoftware/multiflexi-mcp-server.git"
+Issues = "https://github.com/VitexSoftware/multiflexi-mcp-server/issues"
+Changelog = "https://github.com/VitexSoftware/multiflexi-mcp-server/blob/main/CHANGELOG.md"
+
+[project.scripts]
+multiflexi-mcp-server = "multiflexi_mcp_server.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.black]
+target-version = ['py39']
+include = '\.pyi?$'
+line-length = 88
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+
+[tool.ruff]
+target-version = "py39"
+line-length = 88
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
