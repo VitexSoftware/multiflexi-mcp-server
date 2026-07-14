@@ -72,6 +72,12 @@ async def list_resources() -> List[Resource]:
 @app.read_resource()
 async def read_resource(uri: str) -> str:
     """Read a specific MultiFlexi resource."""
+    # The mcp SDK invokes this with a pydantic AnyUrl instance despite the `str`
+    # annotation. AnyUrl("multiflexi://apps") == "multiflexi://apps" is False even
+    # though str(...) matches, so every branch below silently fell through to
+    # "Resource not found" for real MCP clients (unit tests missed this because
+    # they call read_resource() directly with a plain str, bypassing the SDK).
+    uri = str(uri)
     try:
         if uri == "multiflexi://apps":
             result = client.get_apps()

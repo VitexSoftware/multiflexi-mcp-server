@@ -38,10 +38,28 @@ class TestMCPServer:
     
     @pytest.mark.asyncio
     @patch('multiflexi_mcp_server.server.client')
+    async def test_read_resource_apps_with_anyurl(self, mock_client):
+        """The real mcp SDK invokes read_resource() with a pydantic AnyUrl
+        instance (despite the `str` type hint), not a plain str. AnyUrl(...) ==
+        "multiflexi://apps" is False even though str(AnyUrl(...)) matches, so a
+        naive `if uri == "multiflexi://apps"` silently falls through to
+        "Resource not found" for every real MCP client -- confirmed via a live
+        stdio MCP session against a real server before this was fixed."""
+        from pydantic import AnyUrl
+
+        mock_client.get_apps.return_value = {"apps": [{"id": 1, "name": "test"}]}
+
+        result = await read_resource(AnyUrl("multiflexi://apps"))
+
+        assert "Resource not found" not in result
+        mock_client.get_apps.assert_called_once()
+
+    @pytest.mark.asyncio
+    @patch('multiflexi_mcp_server.server.client')
     async def test_read_resource_apps(self, mock_client):
         """Test reading apps resource."""
         mock_client.get_apps.return_value = {"apps": [{"id": 1, "name": "test"}]}
-        
+
         result = await read_resource("multiflexi://apps")
         parsed_result = json.loads(result)
         
