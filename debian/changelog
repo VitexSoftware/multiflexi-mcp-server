@@ -1,0 +1,5 @@
+multiflexi-mcp-server (0.1.0-1) unstable; urgency=medium
+
+  * Initial Debian packaging.
+
+ -- Vítězslav Dvořák <info@vitexsoftware.cz>  Tue, 14 Jul 2026 14:07:30 +0200

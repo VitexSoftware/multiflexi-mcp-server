@@ -1,0 +1,12 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME=multiflexi_mcp_server
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+override_dh_auto_test:
+	# Intentionally not run at build time: python3-mcp / python3-multiflexi /
+	# python3-pydantic are not guaranteed present in the build chroot. The
+	# real test run happens post-install via debian/tests/control
+	# (autopkgtest), where those runtime deps are installed.

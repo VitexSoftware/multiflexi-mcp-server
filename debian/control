@@ -1,0 +1,19 @@
+Source: multiflexi-mcp-server
+Section: python
+Priority: optional
+Maintainer: "Vítězslav Dvořák" <info@vitexsoftware.cz>
+Build-Depends: debhelper-compat (= 13), dh-python, pybuild-plugin-pyproject, python3-all, python3-setuptools
+Standards-Version: 4.6.2
+Homepage: https://github.com/VitexSoftware/multiflexi-mcp-server
+
+Package: python3-multiflexi-mcp-server
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends},
+ python3-mcp,
+ python3-multiflexi,
+ python3-pydantic (>= 2),
+Description: MCP server for MultiFlexi API integration
+ Model Context Protocol (MCP) server that exposes MultiFlexi job
+ scheduler/middleware operations -- applications, jobs, companies, users,
+ run templates, and GDPR data export -- as tools and resources for AI
+ agents such as Claude Desktop and Claude Code.

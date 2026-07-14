@@ -1,0 +1,6 @@
+#!/bin/sh
+# DEP-8 autopkgtest: runs the real pytest suite against the *installed*
+# python3-multiflexi-mcp-server package (and its python3-mcp / python3-multiflexi
+# / python3-pydantic runtime deps), not against src/ in this source tree.
+set -e
+python3 -m pytest tests/ -v
