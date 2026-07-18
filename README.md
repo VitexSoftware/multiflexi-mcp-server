@@ -96,8 +96,18 @@ The server provides the following resources:
 - `multiflexi://companies` - List of companies
 - `multiflexi://users` - List of users
 - `multiflexi://runtemplates` - List of run templates
+- `multiflexi://credentials` - List of credentials
+- `multiflexi://credential_types` - List of credential types
+- `multiflexi://topics` - List of topics (capability contracts)
+- `multiflexi://eventsources` - List of event sources
+- `multiflexi://eventrules` - List of event rules
+- `multiflexi://tasks` - List of tasks (per-window fulfilment obligations)
 
 ### Available Tools
+
+Requires a `multiflexi-client` build generated from the current
+`openapi-schema.yaml` (not yet released to PyPI as of this writing — see
+"Known limitations" below).
 
 #### Application Management
 - `get_app` - Get application by ID
@@ -105,17 +115,44 @@ The server provides the following resources:
 
 #### Job Management
 - `get_job` - Get job by ID
-- `create_job` - Create a new job
+- `create_job` - Schedule a job from a RunTemplate (`runtemplate_id`, `scheduled`, `executor`, `env`)
 - `get_job_status` - Get job execution status
 - `get_jobs` - List all jobs (via resources)
 
 #### Company Management
 - `get_company` - Get company by ID
-- `get_companies` - List all companies (via resources)
+- `list_companies` - List all companies
+- `list_company_users` - List users assigned to a company
+- `assign_user_to_company` - Assign a user to a company with an access role
+- `unassign_user_from_company` - Remove a user's assignment from a company
 
 #### User Management
 - `get_user` - Get user by ID
-- `get_users` - List all users (via resources)
+- `list_users` - List all users
+- `get_user_roles` - Get RBAC roles assigned to a user
+- `set_user_roles` - Assign RBAC roles to a user
+
+#### Credential & Credential Type Management (read-only, see limitations)
+- `list_credentials` / `get_credential` - List/get credentials
+- `list_credential_types` / `get_credential_type` - List/get credential types
+
+#### Topic Management (read-only, see limitations)
+- `list_topics` / `get_topic` - List/get topics
+
+#### Event Source Management
+- `list_event_sources` / `get_event_source` - List/get event sources
+- `set_event_source` - Create or update an event source
+- `delete_event_source` - Delete an event source
+- `test_event_source_connection` - Live-test connectivity/credentials
+
+#### Event Rule Management
+- `list_event_rules` / `get_event_rule` - List/get event rules
+- `set_event_rule` - Create or update an event rule
+- `delete_event_rule` - Delete an event rule
+
+#### Task (read-only — tasks are system-materialized per RunTemplate window)
+- `list_tasks` - List tasks, optionally filtered by `state`/`runtemplate_id`
+- `get_task` - Get a task by ID, including its job attempt history
 
 #### Run Template Management
 - `get_runtemplate` - Get run template by ID
@@ -125,6 +162,19 @@ The server provides the following resources:
 #### GDPR Compliance
 - `request_data_export` - Request data export
 - `get_export_status` - Check export status
+
+### Known limitations
+
+- `set_company_by_id`, `update_credentials`, `update_credential_type`, and
+  `update_topic` have no `requestBody` defined in `openapi-schema.yaml` yet,
+  so Company/Credential/CredentialType/Topic writes are not exposed as MCP
+  tools — only list/get. Fixing this requires a schema change in
+  `multiflexi-api` (deciding what fields each write should accept), tracked
+  separately.
+- `get_credential`'s schema declares a required `token` parameter alongside
+  `credential_id` that looks like a schema-authoring artifact on a
+  session-authenticated endpoint; it's exposed but defaults to an empty
+  string.
 
 ### Example Tool Usage
 
@@ -142,13 +192,9 @@ The server provides the following resources:
 {
   "tool": "create_job",
   "arguments": {
-    "app_id": 123,
-    "company_id": 456,
-    "job_data": {
-      "name": "Data Processing Job",
-      "description": "Process daily data",
-      "schedule": "0 2 * * *"
-    }
+    "runtemplate_id": 15,
+    "scheduled": "now",
+    "env": {"DOCID": "FV-2025-0042"}
   }
 }
 ```

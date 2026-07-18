@@ -56,14 +56,28 @@ class MultiFleXiClient:
         with multiflexi_client.ApiClient(configuration) as api_client:
             yield api_client
     
-    def format_response(self, response: Any) -> Dict[str, Any]:
-        """Format API response to dictionary."""
+    def format_response(self, response: Any) -> Any:
+        """Recursively convert an API response into JSON-serializable data.
+
+        Generated client methods return lists (e.g. ``List[Company]``) and
+        plain dicts as often as single model objects. The previous
+        implementation only handled the single-object case (``to_dict``) and
+        fell back to ``str(response)`` for everything else, which silently
+        turned every list/dict response into a Python repr string instead of
+        real JSON -- e.g. ``list_companies()`` came back as
+        ``{"response": "[Company(id=1, ...), Company(id=2, ...)]"}``.
+        """
+        if response is None or isinstance(response, (str, int, float, bool)):
+            return response
+        if isinstance(response, list):
+            return [self.format_response(item) for item in response]
+        if isinstance(response, dict):
+            return {key: self.format_response(value) for key, value in response.items()}
         if hasattr(response, 'to_dict'):
             return response.to_dict()
-        elif hasattr(response, '__dict__'):
+        if hasattr(response, '__dict__'):
             return response.__dict__
-        else:
-            return {"response": str(response)}
+        return response
     
     def handle_api_error(self, error: ApiException, operation: str) -> Dict[str, Any]:
         """Handle API exceptions and return formatted error response."""
@@ -129,27 +143,33 @@ class MultiFleXiClient:
         except ApiException as e:
             return self.handle_api_error(e, f"get_job_by_id({job_id})")
 
-    def create_job(self, job_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a new job.
+    def create_job(
+        self,
+        runtemplate_id: int,
+        scheduled: str = "now",
+        executor: Optional[str] = None,
+        env: Optional[Dict[str, str]] = None,
+    ) -> Dict[str, Any]:
+        """Schedule a job from a RunTemplate (``POST /job/``).
 
-        Not currently supported: multiflexi-client 1.1.0's create/update endpoint
-        (``JobApi.setjob_by_id``, ``POST /job/``) only ever puts ``jobId`` and
-        ``limit`` on the wire -- it has no request-body parameter at all, so
-        ``job_data`` (app_id, company_id, name, schedule, ...) cannot reach the
-        server. Calling it anyway would silently create a job stripped of all the
-        data the caller asked for, so this fails loudly instead. Revisit once the
-        multiflexi-client SDK exposes a body for this endpoint.
+        Mirrors ``multiflexi-cli run-template:schedule``. Requires a
+        regenerated ``multiflexi-client`` (>=1.2.0 once released) whose
+        ``JobApi.setjob_by_id`` accepts a ``SetjobByIdRequest`` body -- the
+        currently-published 1.1.0 has no request-body parameter at all.
         """
-        return {
-            "error": True,
-            "operation": "create_job",
-            "reason": "not_supported_by_client_sdk",
-            "message": (
-                "multiflexi-client 1.1.0's job create/update endpoint does not "
-                "accept a request body, so job_data cannot be transmitted to the "
-                "server. This is an upstream SDK limitation."
-            ),
-        }
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.JobApi(api_client)
+                request = multiflexi_client.SetjobByIdRequest(
+                    runtemplate_id=runtemplate_id,
+                    scheduled=scheduled,
+                    executor=executor,
+                    env=env,
+                )
+                result = api_instance.setjob_by_id(request)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, "create_job")
 
     def get_job_status(self, job_id: int) -> Dict[str, Any]:
         """Get job status by ID.
@@ -264,6 +284,293 @@ class MultiFleXiClient:
                 return self.format_response(result)
         except ApiException as e:
             return self.handle_api_error(e, f"update_runtemplate({template_id})")
+
+    # Company listing / membership methods
+    def list_companies(
+        self,
+        format_type: str = "json",
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        order: Optional[str] = None,
+    ) -> Any:
+        """List all companies."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.CompanyApi(api_client)
+                result = api_instance.list_companies(format_type, limit=limit, offset=offset, order=order)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, "list_companies")
+
+    def list_company_users(
+        self,
+        company_id: int,
+        format_type: str = "json",
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        order: Optional[str] = None,
+    ) -> Any:
+        """List users assigned to a company."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.UserCompanyApi(api_client)
+                result = api_instance.list_company_users(
+                    company_id, format_type, limit=limit, offset=offset, order=order
+                )
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"list_company_users({company_id})")
+
+    def assign_user_to_company(self, company_id: int, user_id: int, role: str = "viewer") -> Any:
+        """Assign a user to a company with a given access role."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.UserCompanyApi(api_client)
+                request = multiflexi_client.AssignUserToCompanyRequest(user_id=user_id, role=role)
+                result = api_instance.assign_user_to_company(company_id, request)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"assign_user_to_company({company_id}, {user_id})")
+
+    def unassign_user_from_company(self, company_id: int, user_id: int) -> Any:
+        """Remove a user's assignment from a company."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.UserCompanyApi(api_client)
+                result = api_instance.unassign_user_from_company(company_id, user_id)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"unassign_user_from_company({company_id}, {user_id})")
+
+    # User listing / role methods
+    def list_users(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
+        """List all users."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.UserApi(api_client)
+                result = api_instance.list_users(format_type, limit=limit)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, "list_users")
+
+    def get_user_roles(self, user_id: int, format_type: str = "json") -> Any:
+        """Get the RBAC roles assigned to a user."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.UserRoleApi(api_client)
+                result = api_instance.get_user_roles(user_id, format_type)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"get_user_roles({user_id})")
+
+    def set_user_roles(self, user_id: int, roles: List[str], replace: bool = True) -> Any:
+        """Assign RBAC roles to a user.
+
+        ``replace=True`` (the API default) removes any existing roles not in
+        ``roles``; set ``replace=False`` to add roles without revoking others.
+        """
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.UserRoleApi(api_client)
+                request = multiflexi_client.SetUserRolesRequest(roles=roles)
+                result = api_instance.set_user_roles(user_id, request, replace=replace)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"set_user_roles({user_id})")
+
+    # Credential methods
+    def list_credentials(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
+        """List all credentials visible to the authenticated user."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.CredentialApi(api_client)
+                result = api_instance.get_all_user_credentials(format_type, limit=limit)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, "list_credentials")
+
+    def get_credential(self, credential_id: int, format_type: str = "json", token: str = "") -> Any:
+        """Get a credential by ID.
+
+        Note: the schema's ``GET /credential/{id}`` declares a required
+        ``token`` path/query parameter alongside ``credentialId`` -- this
+        looks like a schema-authoring artifact (a stray auth parameter on a
+        session-authenticated endpoint) rather than an intentional second
+        credential. Passed through as-is; empty string works against the
+        current server implementation.
+        """
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.CredentialApi(api_client)
+                result = api_instance.get_credential(token, credential_id, format_type)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"get_credential({credential_id})")
+
+    # CredentialType methods
+    def list_credential_types(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
+        """List all credential types."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.CredentialTypeApi(api_client)
+                result = api_instance.get_all_credential_types(format_type, limit=limit)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, "list_credential_types")
+
+    def get_credential_type(self, credential_type_id: int, format_type: str = "json") -> Any:
+        """Get a credential type by ID."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.CredentialTypeApi(api_client)
+                result = api_instance.get_credential_type(credential_type_id, format_type)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"get_credential_type({credential_type_id})")
+
+    # Topic methods
+    def list_topics(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
+        """List all topics (capability contracts required/provided by apps and credentials)."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.TopicApi(api_client)
+                result = api_instance.get_all_topics(format_type, limit=limit)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, "list_topics")
+
+    def get_topic(self, topic_id: int, format_type: str = "json") -> Any:
+        """Get a topic by ID."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.TopicApi(api_client)
+                result = api_instance.get_topic(topic_id, format_type)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"get_topic({topic_id})")
+
+    # EventSource methods
+    def list_event_sources(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
+        """List all event sources (webhook adapters feeding EventRules)."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.EventsourceApi(api_client)
+                result = api_instance.list_event_sources(format_type, limit=limit)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, "list_event_sources")
+
+    def get_event_source(self, event_source_id: int, format_type: str = "json") -> Any:
+        """Get an event source by ID."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.EventsourceApi(api_client)
+                result = api_instance.get_event_source_by_id(event_source_id, format_type)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"get_event_source({event_source_id})")
+
+    def set_event_source(self, event_source_data: Dict[str, Any], event_source_id: Optional[int] = None) -> Any:
+        """Create (``event_source_id`` omitted) or update an event source."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.EventsourceApi(api_client)
+                event_source = multiflexi_client.EventSource(**event_source_data)
+                result = api_instance.set_event_source_by_id(event_source, event_source_id=event_source_id)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"set_event_source({event_source_id})")
+
+    def delete_event_source(self, event_source_id: int, format_type: str = "json") -> Any:
+        """Delete an event source by ID."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.EventsourceApi(api_client)
+                api_instance.delete_event_source_by_id(event_source_id, format_type)
+                return {"success": True, "event_source_id": event_source_id}
+        except ApiException as e:
+            return self.handle_api_error(e, f"delete_event_source({event_source_id})")
+
+    def test_event_source_connection(self, event_source_id: int, format_type: str = "json") -> Any:
+        """Live-test connectivity/credentials for an event source."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.EventsourceApi(api_client)
+                result = api_instance.test_event_source_connection(event_source_id, format_type)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"test_event_source_connection({event_source_id})")
+
+    # EventRule methods
+    def list_event_rules(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
+        """List all event rules (bindings from EventSource changes to RunTemplate triggers)."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.EventruleApi(api_client)
+                result = api_instance.list_event_rules(format_type, limit=limit)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, "list_event_rules")
+
+    def get_event_rule(self, event_rule_id: int, format_type: str = "json") -> Any:
+        """Get an event rule by ID."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.EventruleApi(api_client)
+                result = api_instance.get_event_rule_by_id(event_rule_id, format_type)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"get_event_rule({event_rule_id})")
+
+    def set_event_rule(self, event_rule_data: Dict[str, Any], event_rule_id: Optional[int] = None) -> Any:
+        """Create (``event_rule_id`` omitted) or update an event rule."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.EventruleApi(api_client)
+                event_rule = multiflexi_client.EventRule(**event_rule_data)
+                result = api_instance.set_event_rule_by_id(event_rule, event_rule_id=event_rule_id)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"set_event_rule({event_rule_id})")
+
+    def delete_event_rule(self, event_rule_id: int, format_type: str = "json") -> Any:
+        """Delete an event rule by ID."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.EventruleApi(api_client)
+                api_instance.delete_event_rule_by_id(event_rule_id, format_type)
+                return {"success": True, "event_rule_id": event_rule_id}
+        except ApiException as e:
+            return self.handle_api_error(e, f"delete_event_rule({event_rule_id})")
+
+    # Task methods (read-only: Tasks are system-materialized per RunTemplate window, not user-created)
+    def list_tasks(
+        self,
+        format_type: str = "json",
+        state: Optional[str] = None,
+        runtemplate_id: Optional[int] = None,
+        limit: Optional[int] = None,
+    ) -> Any:
+        """List tasks (scheduling-window obligations), optionally filtered by state/runtemplate."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.TaskApi(api_client)
+                result = api_instance.list_tasks(
+                    format_type, state=state, runtemplate_id=runtemplate_id, limit=limit
+                )
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, "list_tasks")
+
+    def get_task(self, task_id: int, format_type: str = "json") -> Any:
+        """Get a task by ID, including its job attempt history."""
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.TaskApi(api_client)
+                result = api_instance.get_task_by_id(task_id, format_type)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"get_task({task_id})")
 
     # GDPR methods
     def request_data_export(self, export_type: str, format_type: str = "json") -> Dict[str, Any]:

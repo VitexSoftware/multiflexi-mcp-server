@@ -26,8 +26,8 @@ class TestMCPServer:
     async def test_list_resources(self):
         """Test resource listing."""
         resources = await list_resources()
-        
-        assert len(resources) == 5
+
+        assert len(resources) == 11
         resource_uris = [str(r.uri) for r in resources]
 
         assert "multiflexi://apps" in resource_uris
@@ -35,6 +35,12 @@ class TestMCPServer:
         assert "multiflexi://companies" in resource_uris
         assert "multiflexi://users" in resource_uris
         assert "multiflexi://runtemplates" in resource_uris
+        assert "multiflexi://credentials" in resource_uris
+        assert "multiflexi://credential_types" in resource_uris
+        assert "multiflexi://topics" in resource_uris
+        assert "multiflexi://eventsources" in resource_uris
+        assert "multiflexi://eventrules" in resource_uris
+        assert "multiflexi://tasks" in resource_uris
     
     @pytest.mark.asyncio
     @patch('multiflexi_mcp_server.server.client')
@@ -97,16 +103,24 @@ class TestMCPServer:
     async def test_list_tools(self):
         """Test tool listing."""
         tools = await list_tools()
-        
-        assert len(tools) == 10
+
+        assert len(tools) == 34
         tool_names = [t.name for t in tools]
-        
+
         expected_tools = [
             "get_app", "get_job", "create_job", "get_job_status",
             "get_company", "get_user", "get_runtemplate", "update_runtemplate",
-            "request_data_export", "get_export_status"
+            "request_data_export", "get_export_status",
+            "list_companies", "list_company_users", "assign_user_to_company",
+            "unassign_user_from_company", "list_users", "get_user_roles",
+            "set_user_roles", "list_credentials", "get_credential",
+            "list_credential_types", "get_credential_type", "list_topics",
+            "get_topic", "list_event_sources", "get_event_source",
+            "set_event_source", "delete_event_source", "test_event_source_connection",
+            "list_event_rules", "get_event_rule", "set_event_rule",
+            "delete_event_rule", "list_tasks", "get_task",
         ]
-        
+
         for tool_name in expected_tools:
             assert tool_name in tool_names
     
@@ -129,24 +143,22 @@ class TestMCPServer:
     @patch('multiflexi_mcp_server.server.client')
     async def test_call_tool_create_job(self, mock_client):
         """Test create_job tool call."""
-        mock_client.create_job.return_value = {"id": 1, "app_id": 1, "company_id": 1}
-        
+        mock_client.create_job.return_value = {"id": 1, "runtemplate_id": 5}
+
         result = await call_tool("create_job", {
-            "app_id": 1,
-            "company_id": 1,
-            "job_data": {"name": "test"}
+            "runtemplate_id": 5,
+            "scheduled": "now",
+            "env": {"FOO": "bar"}
         })
-        
+
         assert len(result) == 1
         assert isinstance(result[0], TextContent)
         parsed_result = json.loads(result[0].text)
-        assert parsed_result == {"id": 1, "app_id": 1, "company_id": 1}
-        
-        mock_client.create_job.assert_called_once_with({
-            "app_id": 1,
-            "company_id": 1,
-            "name": "test"
-        })
+        assert parsed_result == {"id": 1, "runtemplate_id": 5}
+
+        mock_client.create_job.assert_called_once_with(
+            runtemplate_id=5, scheduled="now", executor=None, env={"FOO": "bar"}
+        )
     
     @pytest.mark.asyncio
     async def test_call_tool_unknown(self):
@@ -206,3 +218,70 @@ class TestMCPServer:
         assert parsed_result == {"export_id": "123", "status": "pending"}
         
         mock_client.request_data_export.assert_called_once_with("personal_data", "json")
+
+    @pytest.mark.asyncio
+    @patch('multiflexi_mcp_server.server.client')
+    async def test_call_tool_list_companies(self, mock_client):
+        mock_client.list_companies.return_value = [{"id": 1, "name": "Acme"}]
+
+        result = await call_tool("list_companies", {"limit": 10})
+
+        parsed_result = json.loads(result[0].text)
+        assert parsed_result == [{"id": 1, "name": "Acme"}]
+        mock_client.list_companies.assert_called_once_with(limit=10, offset=None, order=None)
+
+    @pytest.mark.asyncio
+    @patch('multiflexi_mcp_server.server.client')
+    async def test_call_tool_set_user_roles(self, mock_client):
+        mock_client.set_user_roles.return_value = {"user_id": 1, "roles": ["admin"]}
+
+        result = await call_tool("set_user_roles", {"user_id": 1, "roles": ["admin"], "replace": False})
+
+        parsed_result = json.loads(result[0].text)
+        assert parsed_result == {"user_id": 1, "roles": ["admin"]}
+        mock_client.set_user_roles.assert_called_once_with(1, ["admin"], False)
+
+    @pytest.mark.asyncio
+    @patch('multiflexi_mcp_server.server.client')
+    async def test_call_tool_set_event_source_strips_id_from_payload(self, mock_client):
+        """event_source_id must route to the id kwarg, not leak into the data dict."""
+        mock_client.set_event_source.return_value = {"id": 5, "name": "Webhook"}
+
+        result = await call_tool("set_event_source", {"event_source_id": 5, "name": "Webhook"})
+
+        parsed_result = json.loads(result[0].text)
+        assert parsed_result == {"id": 5, "name": "Webhook"}
+        mock_client.set_event_source.assert_called_once_with({"name": "Webhook"}, event_source_id=5)
+
+    @pytest.mark.asyncio
+    @patch('multiflexi_mcp_server.server.client')
+    async def test_call_tool_test_event_source_connection(self, mock_client):
+        mock_client.test_event_source_connection.return_value = {"reachable": True}
+
+        result = await call_tool("test_event_source_connection", {"event_source_id": 5})
+
+        parsed_result = json.loads(result[0].text)
+        assert parsed_result == {"reachable": True}
+        mock_client.test_event_source_connection.assert_called_once_with(5)
+
+    @pytest.mark.asyncio
+    @patch('multiflexi_mcp_server.server.client')
+    async def test_call_tool_list_tasks(self, mock_client):
+        mock_client.list_tasks.return_value = [{"id": 1, "state": "open"}]
+
+        result = await call_tool("list_tasks", {"state": "open"})
+
+        parsed_result = json.loads(result[0].text)
+        assert parsed_result == [{"id": 1, "state": "open"}]
+        mock_client.list_tasks.assert_called_once_with(state="open", runtemplate_id=None, limit=None)
+
+    @pytest.mark.asyncio
+    @patch('multiflexi_mcp_server.server.client')
+    async def test_read_resource_tasks(self, mock_client):
+        mock_client.list_tasks.return_value = [{"id": 1, "state": "open"}]
+
+        result = await read_resource("multiflexi://tasks")
+        parsed_result = json.loads(result)
+
+        assert parsed_result == [{"id": 1, "state": "open"}]
+        mock_client.list_tasks.assert_called_once()

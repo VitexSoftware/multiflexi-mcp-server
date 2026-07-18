@@ -69,11 +69,31 @@ class TestMultiFleXiClient:
         assert result == {"id": 1, "name": "test"}
     
     def test_format_response_string(self, client):
-        """Test response formatting with string fallback."""
-        mock_response = "test response"
-        
-        result = client.format_response(mock_response)
-        assert result == {"response": "test response"}
+        """Plain scalars pass through unchanged."""
+        assert client.format_response("test response") == "test response"
+        assert client.format_response(42) == 42
+        assert client.format_response(None) is None
+
+    def test_format_response_list_of_models(self, client):
+        """Lists of model objects (e.g. List[Company]) serialize element-wise.
+
+        Regression test: the previous implementation only handled a single
+        object with ``to_dict()`` and stringified everything else, so a list
+        response came back as ``{"response": "[Company(id=1, ...), ...]"}``
+        instead of real JSON.
+        """
+        item1 = Mock()
+        item1.to_dict.return_value = {"id": 1}
+        item2 = Mock()
+        item2.to_dict.return_value = {"id": 2}
+
+        result = client.format_response([item1, item2])
+        assert result == [{"id": 1}, {"id": 2}]
+
+    def test_format_response_plain_dict(self, client):
+        """A plain dict response is returned as-is, not stringified."""
+        result = client.format_response({"success": True, "id": 5})
+        assert result == {"success": True, "id": 5}
     
     def test_handle_api_error(self, client):
         """Test API error handling."""
@@ -153,15 +173,43 @@ class TestMultiFleXiClient:
         assert result == {"id": 1, "name": "test"}
         mock_app_api.get_app_by_id.assert_called_once_with(1, "json", limit=None)
     
-    def test_create_job_not_supported(self, client):
-        """create_job is a documented no-op: multiflexi-client 1.1.0's
-        create/update job endpoint has no request-body parameter, so job_data
-        can never reach the server. It must fail loudly instead of silently
-        creating an empty job."""
-        result = client.create_job({"app_id": 1, "company_id": 1, "name": "test"})
+    @patch('multiflexi_client.ApiClient')
+    def test_create_job_success(self, mock_api_client_class, client):
+        """create_job schedules a job via JobApi.setjob_by_id with a real
+        SetjobByIdRequest body (runtemplate_id/scheduled/executor/env)."""
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value.__enter__.return_value = mock_api_client
+
+        mock_job_api = Mock()
+        mock_response = Mock()
+        mock_response.to_dict.return_value = {"id": 42, "runtemplate_id": 1}
+        mock_job_api.setjob_by_id.return_value = mock_response
+
+        with patch('multiflexi_client.JobApi', return_value=mock_job_api):
+            result = client.create_job(runtemplate_id=1, scheduled="now", env={"FOO": "bar"})
+
+        assert result == {"id": 42, "runtemplate_id": 1}
+        call_args = mock_job_api.setjob_by_id.call_args
+        request = call_args.args[0]
+        assert request.runtemplate_id == 1
+        assert request.scheduled == "now"
+        assert request.env == {"FOO": "bar"}
+
+    @patch('multiflexi_client.ApiClient')
+    def test_create_job_api_error(self, mock_api_client_class, client):
+        """create_job surfaces ApiException via handle_api_error."""
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value.__enter__.return_value = mock_api_client
+
+        mock_job_api = Mock()
+        mock_job_api.setjob_by_id.side_effect = ApiException(status=404, reason="Not Found")
+
+        with patch('multiflexi_client.JobApi', return_value=mock_job_api):
+            result = client.create_job(runtemplate_id=999)
 
         assert result["error"] is True
-        assert result["reason"] == "not_supported_by_client_sdk"
+        assert result["operation"] == "create_job"
+        assert result["status"] == 404
 
     @patch('multiflexi_client.ApiClient')
     def test_get_job_status_derives_from_job(self, mock_api_client_class, client):
@@ -191,3 +239,155 @@ class TestMultiFleXiClient:
             "exitcode": 0,
         }
         mock_job_api.getjob_by_id.assert_called_once_with(1, "json")
+
+
+class TestMultiFleXiClientNewDomains:
+    """Tests for the Company/User/Credential/Topic/EventSource/EventRule/Task
+    coverage added on top of the original 9-tool surface."""
+
+    @pytest.fixture
+    def config(self):
+        return MultiFleXiConfig(host="https://test.example.com", username="testuser", password="testpass")
+
+    @pytest.fixture
+    def client(self, config):
+        return MultiFleXiClient(config)
+
+    @patch('multiflexi_client.ApiClient')
+    def test_list_companies_success(self, mock_api_client_class, client):
+        mock_api_client_class.return_value.__enter__.return_value = MagicMock()
+        item = Mock()
+        item.to_dict.return_value = {"id": 1, "name": "Acme"}
+        mock_company_api = Mock()
+        mock_company_api.list_companies.return_value = [item]
+
+        with patch('multiflexi_client.CompanyApi', return_value=mock_company_api):
+            result = client.list_companies()
+
+        assert result == [{"id": 1, "name": "Acme"}]
+
+    @patch('multiflexi_client.ApiClient')
+    def test_assign_user_to_company(self, mock_api_client_class, client):
+        mock_api_client_class.return_value.__enter__.return_value = MagicMock()
+        mock_uc_api = Mock()
+        response = Mock()
+        response.to_dict.return_value = {"user_id": 3, "company_id": 1, "role": "manager"}
+        mock_uc_api.assign_user_to_company.return_value = response
+
+        with patch('multiflexi_client.UserCompanyApi', return_value=mock_uc_api):
+            result = client.assign_user_to_company(1, 3, "manager")
+
+        assert result == {"user_id": 3, "company_id": 1, "role": "manager"}
+        request = mock_uc_api.assign_user_to_company.call_args.args[1]
+        assert request.user_id == 3
+        assert request.role == "manager"
+
+    @patch('multiflexi_client.ApiClient')
+    def test_set_user_roles(self, mock_api_client_class, client):
+        mock_api_client_class.return_value.__enter__.return_value = MagicMock()
+        mock_role_api = Mock()
+        response = Mock()
+        response.to_dict.return_value = {"user_id": 2, "roles": ["admin"]}
+        mock_role_api.set_user_roles.return_value = response
+
+        with patch('multiflexi_client.UserRoleApi', return_value=mock_role_api):
+            result = client.set_user_roles(2, ["admin"], replace=False)
+
+        assert result == {"user_id": 2, "roles": ["admin"]}
+        args, kwargs = mock_role_api.set_user_roles.call_args
+        assert args[0] == 2
+        assert args[1].roles == ["admin"]
+        assert kwargs["replace"] is False
+
+    @patch('multiflexi_client.ApiClient')
+    def test_get_credential(self, mock_api_client_class, client):
+        mock_api_client_class.return_value.__enter__.return_value = MagicMock()
+        mock_cred_api = Mock()
+        response = Mock()
+        response.to_dict.return_value = {"id": 7, "name": "FioToken"}
+        mock_cred_api.get_credential.return_value = response
+
+        with patch('multiflexi_client.CredentialApi', return_value=mock_cred_api):
+            result = client.get_credential(7)
+
+        assert result == {"id": 7, "name": "FioToken"}
+        mock_cred_api.get_credential.assert_called_once_with("", 7, "json")
+
+    @patch('multiflexi_client.ApiClient')
+    def test_list_topics_api_error(self, mock_api_client_class, client):
+        mock_api_client_class.return_value.__enter__.return_value = MagicMock()
+        mock_topic_api = Mock()
+        mock_topic_api.get_all_topics.side_effect = ApiException(status=500, reason="Server Error")
+
+        with patch('multiflexi_client.TopicApi', return_value=mock_topic_api):
+            result = client.list_topics()
+
+        assert result["error"] is True
+        assert result["operation"] == "list_topics"
+
+    @patch('multiflexi_client.ApiClient')
+    def test_set_event_source_create(self, mock_api_client_class, client):
+        mock_api_client_class.return_value.__enter__.return_value = MagicMock()
+        mock_es_api = Mock()
+        response = Mock()
+        response.to_dict.return_value = {"id": 9, "name": "Webhook"}
+        mock_es_api.set_event_source_by_id.return_value = response
+
+        with patch('multiflexi_client.EventsourceApi', return_value=mock_es_api):
+            result = client.set_event_source({"name": "Webhook", "adapter_type": "generic"})
+
+        assert result == {"id": 9, "name": "Webhook"}
+        call_args, call_kwargs = mock_es_api.set_event_source_by_id.call_args
+        assert call_args[0].name == "Webhook"
+        assert call_kwargs["event_source_id"] is None
+
+    @patch('multiflexi_client.ApiClient')
+    def test_test_event_source_connection(self, mock_api_client_class, client):
+        mock_api_client_class.return_value.__enter__.return_value = MagicMock()
+        mock_es_api = Mock()
+        response = Mock()
+        response.to_dict.return_value = {"reachable": True}
+        mock_es_api.test_event_source_connection.return_value = response
+
+        with patch('multiflexi_client.EventsourceApi', return_value=mock_es_api):
+            result = client.test_event_source_connection(9)
+
+        assert result == {"reachable": True}
+
+    @patch('multiflexi_client.ApiClient')
+    def test_delete_event_rule(self, mock_api_client_class, client):
+        mock_api_client_class.return_value.__enter__.return_value = MagicMock()
+        mock_er_api = Mock()
+        mock_er_api.delete_event_rule_by_id.return_value = None
+
+        with patch('multiflexi_client.EventruleApi', return_value=mock_er_api):
+            result = client.delete_event_rule(4)
+
+        assert result == {"success": True, "event_rule_id": 4}
+
+    @patch('multiflexi_client.ApiClient')
+    def test_list_tasks_with_filters(self, mock_api_client_class, client):
+        mock_api_client_class.return_value.__enter__.return_value = MagicMock()
+        mock_task_api = Mock()
+        item = Mock()
+        item.to_dict.return_value = {"id": 1, "state": "fulfilled"}
+        mock_task_api.list_tasks.return_value = [item]
+
+        with patch('multiflexi_client.TaskApi', return_value=mock_task_api):
+            result = client.list_tasks(state="fulfilled", runtemplate_id=5)
+
+        assert result == [{"id": 1, "state": "fulfilled"}]
+        mock_task_api.list_tasks.assert_called_once_with("json", state="fulfilled", runtemplate_id=5, limit=None)
+
+    @patch('multiflexi_client.ApiClient')
+    def test_get_task(self, mock_api_client_class, client):
+        mock_api_client_class.return_value.__enter__.return_value = MagicMock()
+        mock_task_api = Mock()
+        response = Mock()
+        response.to_dict.return_value = {"id": 1, "jobs": []}
+        mock_task_api.get_task_by_id.return_value = response
+
+        with patch('multiflexi_client.TaskApi', return_value=mock_task_api):
+            result = client.get_task(1)
+
+        assert result == {"id": 1, "jobs": []}
