@@ -499,6 +499,27 @@ async def list_tools() -> List[Tool]:
             }
         ),
         Tool(
+            name="update_credential",
+            description="Update a credential by ID",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "credential_id": {"type": "integer", "description": "ID of the credential to update"},
+                    "credential_data": {
+                        "type": "object",
+                        "description": "Fields to update",
+                        "properties": {
+                            "name": {"type": "string", "description": "Credential name"},
+                            "company_id": {"type": "integer", "description": "Owning company ID"},
+                            "type": {"type": "string", "description": "Credential type", "enum": ["password", "token", "certificate"]},
+                            "value": {"type": "string", "description": "Credential value"}
+                        }
+                    }
+                },
+                "required": ["credential_id", "credential_data"]
+            }
+        ),
+        Tool(
             name="list_credential_types",
             description="List all credential types",
             inputSchema={
@@ -517,6 +538,27 @@ async def list_tools() -> List[Tool]:
                     "credential_type_id": {"type": "integer", "description": "ID of the credential type"}
                 },
                 "required": ["credential_type_id"]
+            }
+        ),
+        Tool(
+            name="update_credential_type",
+            description="Update a credential type by ID",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "credential_type_id": {"type": "integer", "description": "ID of the credential type to update"},
+                    "credential_type_data": {
+                        "type": "object",
+                        "description": "Fields to update",
+                        "properties": {
+                            "name": {"type": "string", "description": "Credential type name"},
+                            "description": {"type": "string", "description": "Description"},
+                            "url": {"type": "string", "description": "Reference URL"},
+                            "logo": {"type": "string", "description": "Logo URL/path"}
+                        }
+                    }
+                },
+                "required": ["credential_type_id", "credential_type_data"]
             }
         ),
         # Topic
@@ -539,6 +581,25 @@ async def list_tools() -> List[Tool]:
                     "topic_id": {"type": "integer", "description": "ID of the topic"}
                 },
                 "required": ["topic_id"]
+            }
+        ),
+        Tool(
+            name="update_topic",
+            description="Update a topic by ID",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "topic_id": {"type": "integer", "description": "ID of the topic to update"},
+                    "topic_data": {
+                        "type": "object",
+                        "description": "Fields to update",
+                        "properties": {
+                            "name": {"type": "string", "description": "Topic name"},
+                            "color": {"type": "string", "description": "Hex color, e.g. #000000"}
+                        }
+                    }
+                },
+                "required": ["topic_id", "topic_data"]
             }
         ),
         # EventSource
@@ -777,17 +838,26 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
         elif name == "get_credential":
             result = client.get_credential(arguments["credential_id"])
 
+        elif name == "update_credential":
+            result = client.update_credential(arguments["credential_id"], arguments["credential_data"])
+
         elif name == "list_credential_types":
             result = client.list_credential_types(limit=arguments.get("limit"))
 
         elif name == "get_credential_type":
             result = client.get_credential_type(arguments["credential_type_id"])
 
+        elif name == "update_credential_type":
+            result = client.update_credential_type(arguments["credential_type_id"], arguments["credential_type_data"])
+
         elif name == "list_topics":
             result = client.list_topics(limit=arguments.get("limit"))
 
         elif name == "get_topic":
             result = client.get_topic(arguments["topic_id"])
+
+        elif name == "update_topic":
+            result = client.update_topic(arguments["topic_id"], arguments["topic_data"])
 
         elif name == "list_event_sources":
             result = client.list_event_sources(limit=arguments.get("limit"))

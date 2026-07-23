@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `update_credential`, `update_credential_type`, and `update_topic` tools, now that
+  `multiflexi-api`'s `openapi-schema.yaml` defines `requestBody` schemas for
+  `updateCredentials`, `updateCredentialType`, and `updateTopic` (previously
+  parameter-only, documentation/spec gaps that also left the generated
+  `multiflexi-client` SDK without request models for these writes).
+
 ### Fixed
+- `MultiFleXiConfig` used Pydantic v1-style `@validator` and `cls.__fields__`,
+  which are deprecated under the installed Pydantic v2 (Debian `python3-pydantic`).
+  Migrated to `@field_validator` + `@classmethod` and `cls.model_fields`.
 - Console script entry point (`multiflexi-mcp-server`) was `async def main()`, which the
   generated script called without awaiting -- it printed an unawaited-coroutine warning
   and exited immediately without ever starting the server. `main()` is now a sync wrapper

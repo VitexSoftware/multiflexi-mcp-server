@@ -314,6 +314,55 @@ class TestMultiFleXiClientNewDomains:
         mock_cred_api.get_credential.assert_called_once_with("", 7, "json")
 
     @patch('multiflexi_client.ApiClient')
+    def test_update_credential(self, mock_api_client_class, client):
+        mock_api_client_class.return_value.__enter__.return_value = MagicMock()
+        mock_cred_api = Mock()
+        response = Mock()
+        response.to_dict.return_value = {"id": 7, "name": "Renamed"}
+        mock_cred_api.update_credentials.return_value = response
+
+        with patch('multiflexi_client.CredentialApi', return_value=mock_cred_api):
+            result = client.update_credential(7, {"name": "Renamed"})
+
+        assert result == {"id": 7, "name": "Renamed"}
+        args, _ = mock_cred_api.update_credentials.call_args
+        assert args[0] == ""
+        assert args[1] == 7
+        assert args[3].name == "Renamed"
+
+    @patch('multiflexi_client.ApiClient')
+    def test_update_credential_type(self, mock_api_client_class, client):
+        mock_api_client_class.return_value.__enter__.return_value = MagicMock()
+        mock_ct_api = Mock()
+        response = Mock()
+        response.to_dict.return_value = {"id": 3, "name": "FioBank"}
+        mock_ct_api.update_credential_type.return_value = response
+
+        with patch('multiflexi_client.CredentialTypeApi', return_value=mock_ct_api):
+            result = client.update_credential_type(3, {"name": "FioBank"})
+
+        assert result == {"id": 3, "name": "FioBank"}
+        args, _ = mock_ct_api.update_credential_type.call_args
+        assert args[0] == 3
+        assert args[2].name == "FioBank"
+
+    @patch('multiflexi_client.ApiClient')
+    def test_update_topic(self, mock_api_client_class, client):
+        mock_api_client_class.return_value.__enter__.return_value = MagicMock()
+        mock_topic_api = Mock()
+        response = Mock()
+        response.to_dict.return_value = {"id": 5, "name": "FioBank", "color": "#123456"}
+        mock_topic_api.update_topic.return_value = response
+
+        with patch('multiflexi_client.TopicApi', return_value=mock_topic_api):
+            result = client.update_topic(5, {"color": "#123456"})
+
+        assert result == {"id": 5, "name": "FioBank", "color": "#123456"}
+        args, _ = mock_topic_api.update_topic.call_args
+        assert args[0] == 5
+        assert args[2].color == "#123456"
+
+    @patch('multiflexi_client.ApiClient')
     def test_list_topics_api_error(self, mock_api_client_class, client):
         mock_api_client_class.return_value.__enter__.return_value = MagicMock()
         mock_topic_api = Mock()

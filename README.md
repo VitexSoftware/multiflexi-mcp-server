@@ -132,12 +132,12 @@ Requires a `multiflexi-client` build generated from the current
 - `get_user_roles` - Get RBAC roles assigned to a user
 - `set_user_roles` - Assign RBAC roles to a user
 
-#### Credential & Credential Type Management (read-only, see limitations)
-- `list_credentials` / `get_credential` - List/get credentials
-- `list_credential_types` / `get_credential_type` - List/get credential types
+#### Credential & Credential Type Management
+- `list_credentials` / `get_credential` / `update_credential` - List/get/update credentials
+- `list_credential_types` / `get_credential_type` / `update_credential_type` - List/get/update credential types
 
-#### Topic Management (read-only, see limitations)
-- `list_topics` / `get_topic` - List/get topics
+#### Topic Management
+- `list_topics` / `get_topic` / `update_topic` - List/get/update topics
 
 #### Event Source Management
 - `list_event_sources` / `get_event_source` - List/get event sources
@@ -165,12 +165,11 @@ Requires a `multiflexi-client` build generated from the current
 
 ### Known limitations
 
-- `set_company_by_id`, `update_credentials`, `update_credential_type`, and
-  `update_topic` have no `requestBody` defined in `openapi-schema.yaml` yet,
-  so Company/Credential/CredentialType/Topic writes are not exposed as MCP
-  tools — only list/get. Fixing this requires a schema change in
-  `multiflexi-api` (deciding what fields each write should accept), tracked
-  separately.
+- `set_company_by_id` still has no `requestBody` defined in
+  `openapi-schema.yaml`, so Company writes are not exposed as an MCP tool —
+  only list/get. `update_credentials`, `update_credential_type`, and
+  `update_topic` now have `requestBody` schemas and are exposed as
+  `update_credential`, `update_credential_type`, and `update_topic`.
 - `get_credential`'s schema declares a required `token` parameter alongside
   `credential_id` that looks like a schema-authoring artifact on a
   session-authenticated endpoint; it's exposed but defaults to an empty

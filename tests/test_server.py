@@ -104,7 +104,7 @@ class TestMCPServer:
         """Test tool listing."""
         tools = await list_tools()
 
-        assert len(tools) == 34
+        assert len(tools) == 37
         tool_names = [t.name for t in tools]
 
         expected_tools = [
@@ -113,9 +113,10 @@ class TestMCPServer:
             "request_data_export", "get_export_status",
             "list_companies", "list_company_users", "assign_user_to_company",
             "unassign_user_from_company", "list_users", "get_user_roles",
-            "set_user_roles", "list_credentials", "get_credential",
-            "list_credential_types", "get_credential_type", "list_topics",
-            "get_topic", "list_event_sources", "get_event_source",
+            "set_user_roles", "list_credentials", "get_credential", "update_credential",
+            "list_credential_types", "get_credential_type", "update_credential_type",
+            "list_topics", "get_topic", "update_topic",
+            "list_event_sources", "get_event_source",
             "set_event_source", "delete_event_source", "test_event_source_connection",
             "list_event_rules", "get_event_rule", "set_event_rule",
             "delete_event_rule", "list_tasks", "get_task",

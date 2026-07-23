@@ -1,5 +1,6 @@
 """MultiFlexi API client wrapper for MCP Server."""
 
+import datetime
 import logging
 from contextlib import contextmanager
 from typing import Any, Dict, List, Optional, Union
@@ -69,14 +70,16 @@ class MultiFleXiClient:
         """
         if response is None or isinstance(response, (str, int, float, bool)):
             return response
+        if isinstance(response, (datetime.datetime, datetime.date)):
+            return response.isoformat()
         if isinstance(response, list):
             return [self.format_response(item) for item in response]
         if isinstance(response, dict):
             return {key: self.format_response(value) for key, value in response.items()}
         if hasattr(response, 'to_dict'):
-            return response.to_dict()
+            return self.format_response(response.to_dict())
         if hasattr(response, '__dict__'):
-            return response.__dict__
+            return self.format_response(response.__dict__)
         return response
     
     def handle_api_error(self, error: ApiException, operation: str) -> Dict[str, Any]:
@@ -407,6 +410,20 @@ class MultiFleXiClient:
         except ApiException as e:
             return self.handle_api_error(e, f"get_credential({credential_id})")
 
+    def update_credential(self, credential_id: int, credential_data: Dict[str, Any], token: str = "") -> Any:
+        """Update a credential by ID.
+
+        ``credential_data`` may include ``name``, ``company_id``, ``type``, ``value``.
+        """
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.CredentialApi(api_client)
+                update_request = multiflexi_client.UpdateCredentialsRequest(**credential_data)
+                result = api_instance.update_credentials(token, credential_id, "json", update_request)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"update_credential({credential_id})")
+
     # CredentialType methods
     def list_credential_types(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
         """List all credential types."""
@@ -428,6 +445,20 @@ class MultiFleXiClient:
         except ApiException as e:
             return self.handle_api_error(e, f"get_credential_type({credential_type_id})")
 
+    def update_credential_type(self, credential_type_id: int, credential_type_data: Dict[str, Any]) -> Any:
+        """Update a credential type by ID.
+
+        ``credential_type_data`` may include ``name``, ``description``, ``url``, ``logo``.
+        """
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.CredentialTypeApi(api_client)
+                update_request = multiflexi_client.UpdateCredentialTypeRequest(**credential_type_data)
+                result = api_instance.update_credential_type(credential_type_id, "json", update_request)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"update_credential_type({credential_type_id})")
+
     # Topic methods
     def list_topics(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
         """List all topics (capability contracts required/provided by apps and credentials)."""
@@ -448,6 +479,20 @@ class MultiFleXiClient:
                 return self.format_response(result)
         except ApiException as e:
             return self.handle_api_error(e, f"get_topic({topic_id})")
+
+    def update_topic(self, topic_id: int, topic_data: Dict[str, Any]) -> Any:
+        """Update a topic by ID.
+
+        ``topic_data`` may include ``name``, ``color``.
+        """
+        try:
+            with self.get_api_client() as api_client:
+                api_instance = multiflexi_client.TopicApi(api_client)
+                update_request = multiflexi_client.UpdateTopicRequest(**topic_data)
+                result = api_instance.update_topic(topic_id, "json", update_request)
+                return self.format_response(result)
+        except ApiException as e:
+            return self.handle_api_error(e, f"update_topic({topic_id})")
 
     # EventSource methods
     def list_event_sources(self, format_type: str = "json", limit: Optional[int] = None) -> Any:

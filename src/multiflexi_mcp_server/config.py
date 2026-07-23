@@ -2,7 +2,7 @@
 
 import os
 from typing import Optional
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class MultiFleXiConfig(BaseModel):
@@ -37,7 +37,8 @@ class MultiFleXiConfig(BaseModel):
         description="Enable debug logging"
     )
 
-    @validator('host')
+    @field_validator('host')
+    @classmethod
     def validate_host(cls, v):
         """Validate host URL format."""
         if not v.startswith(('http://', 'https://')):
@@ -48,7 +49,7 @@ class MultiFleXiConfig(BaseModel):
     def from_env(cls) -> 'MultiFleXiConfig':
         """Create configuration from environment variables."""
         return cls(
-            host=os.getenv("MULTIFLEXI_HOST", cls.__fields__['host'].default),
+            host=os.getenv("MULTIFLEXI_HOST", cls.model_fields['host'].default),
             username=os.getenv("MULTIFLEXI_USERNAME"),
             password=os.getenv("MULTIFLEXI_PASSWORD"),
             verify_ssl=os.getenv("MULTIFLEXI_VERIFY_SSL", "true").lower() == "true",
