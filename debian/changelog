@@ -1,3 +1,11 @@
+multiflexi-mcp-server (0.1.0-2) unstable; urgency=medium
+
+  * Rename binary package python3-multiflexi-mcp-server to multiflexi-
+    mcp-server to match the source package name and installed console
+    script; keep old name via transitional Provides/Replaces/Breaks.
+
+ -- Vítězslav Dvořák <info@vitexsoftware.cz>  Fri, 24 Jul 2026 18:12:26 +0200
+
 multiflexi-mcp-server (0.1.0-1) unstable; urgency=medium
 
   * Initial Debian packaging.
