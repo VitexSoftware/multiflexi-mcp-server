@@ -4,7 +4,7 @@ import json
 import pytest
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 
-from mcp.types import TextContent
+from mcp_types import TextContent
 
 import inspect
 

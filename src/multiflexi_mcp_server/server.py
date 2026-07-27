@@ -8,10 +8,17 @@ from typing import Any, Dict, List, Optional, Union
 from mcp.server import NotificationOptions, Server
 from mcp.server.models import InitializationOptions
 from mcp.server.stdio import stdio_server
-from mcp.types import (
+from mcp_types import (
+    CallToolRequestParams,
+    CallToolResult,
+    ListResourcesResult,
+    ListToolsResult,
+    ReadResourceRequestParams,
+    ReadResourceResult,
     Resource,
     Tool,
     TextContent,
+    TextResourceContents,
     ImageContent,
     EmbeddedResource,
     LoggingLevel,
@@ -24,15 +31,11 @@ from .client import MultiFleXiClient
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# MCP Server instance
-app = Server("multiflexi-mcp-server")
-
 # Global configuration and client
 config = MultiFleXiConfig.from_env()
 client = MultiFleXiClient(config)
 
 
-@app.list_resources()
 async def list_resources() -> List[Resource]:
     """List available MultiFlexi resources."""
     return [
@@ -105,7 +108,6 @@ async def list_resources() -> List[Resource]:
     ]
 
 
-@app.read_resource()
 async def read_resource(uri: str) -> str:
     """Read a specific MultiFlexi resource."""
     # The mcp SDK invokes this with a pydantic AnyUrl instance despite the `str`
@@ -167,7 +169,6 @@ async def read_resource(uri: str) -> str:
         return f"Unexpected error: {e}"
 
 
-@app.list_tools()
 async def list_tools() -> List[Tool]:
     """List available MultiFlexi tools."""
     return [
@@ -748,7 +749,6 @@ async def list_tools() -> List[Tool]:
     ]
 
 
-@app.call_tool()
 async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
     """Handle tool calls for MultiFlexi operations."""
     try:
@@ -916,6 +916,40 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                 "tool": name
             }, indent=2)
         )]
+
+
+# mcp 2.0's lowlevel Server dropped the @app.list_resources()/@app.read_resource()/
+# @app.list_tools()/@app.call_tool() decorator style in favor of on_* callbacks
+# passed to the Server constructor, with a (context, params) signature and typed
+# *Result return values instead of the old bare list/str returns. These adapters
+# keep the business logic above unchanged and just translate at the boundary.
+async def _on_list_resources(context, params) -> ListResourcesResult:
+    return ListResourcesResult(resources=await list_resources())
+
+
+async def _on_read_resource(context, params: ReadResourceRequestParams) -> ReadResourceResult:
+    text = await read_resource(params.uri)
+    return ReadResourceResult(
+        contents=[TextResourceContents(uri=params.uri, mime_type="application/json", text=text)]
+    )
+
+
+async def _on_list_tools(context, params) -> ListToolsResult:
+    return ListToolsResult(tools=await list_tools())
+
+
+async def _on_call_tool(context, params: CallToolRequestParams) -> CallToolResult:
+    content = await call_tool(params.name, params.arguments or {})
+    return CallToolResult(content=content)
+
+
+app = Server(
+    "multiflexi-mcp-server",
+    on_list_resources=_on_list_resources,
+    on_read_resource=_on_read_resource,
+    on_list_tools=_on_list_tools,
+    on_call_tool=_on_call_tool,
+)
 
 
 async def run_server() -> None:
