@@ -1,3 +1,17 @@
+multiflexi-mcp-server (0.1.0-4) unstable; urgency=medium
+
+  * tests/test_client.py: mark test_update_credential,
+    test_update_credential_type and test_update_topic as xfail. The
+    generated multiflexi_client OpenAPI client is missing
+    UpdateCredentialsRequest/UpdateCredentialTypeRequest/
+    UpdateTopicRequest - a pre-existing php-vitexsoftware-multiflexi-
+    server client-generator gap, unrelated to this package, already
+    called out as such in the mcp 2.0 port commit. Unblocks CI now
+    that the full mcp 2.0 dependency stack (mcp, mcp-types, httpx2,
+    httpcore2, anyio, h11, idna) is published.
+
+ -- Vítězslav Dvořák <info@vitexsoftware.cz>  Tue, 28 Jul 2026 06:30:00 +0200
+
 multiflexi-mcp-server (0.1.0-3) unstable; urgency=medium
 
   * Port to mcp 2.0's lowlevel Server API: mcp.types moved to mcp_types,
