@@ -3,6 +3,9 @@
 [![PyPI version](https://badge.fury.io/py/multiflexi-mcp-server.svg)](https://badge.fury.io/py/multiflexi-mcp-server)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![MCP: Model Context Protocol](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-orange)
+![Packaging: deb](https://img.shields.io/badge/packaging-.deb-red?logo=debian&logoColor=white)
+![Self-hosted](https://img.shields.io/badge/deployment-self--hosted%20%2F%20intranet-informational)
 
 MCP (Model Context Protocol) Server for MultiFlexi API integration. This server provides tools and resources for interacting with MultiFlexi applications, jobs, companies, users, and run templates.
 
