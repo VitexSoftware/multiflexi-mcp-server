@@ -1,3 +1,13 @@
+multiflexi-mcp-server (0.2.0-1) unstable; urgency=medium
+
+  * Lazily import multiflexi_client in client.py to fix ~5s cold-start
+    import time causing intermittent MCP handshake-timeout failures;
+    bump upstream to 0.2.0 to cut accumulated Unreleased changes
+    (update_credential/update_credential_type/update_topic tools,
+    Pydantic v2 fixes, job/status endpoint corrections).
+
+ -- Vítězslav Dvořák <info@vitexsoftware.cz>  Wed, 29 Jul 2026 10:57:08 +0200
+
 multiflexi-mcp-server (0.1.0-4) unstable; urgency=medium
 
   * tests/test_client.py: mark test_update_credential,

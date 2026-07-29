@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+- OAuth2 authentication support
+- Connection pooling for better performance
+- Metrics and monitoring endpoints
+- Custom CA certificate support
+- Multiple backend support with load balancing
+- Improved error messages and retry logic
+
+## [0.2.0] - 2026-07-29
+
 ### Added
 - `update_credential`, `update_credential_type`, and `update_topic` tools, now that
   `multiflexi-api`'s `openapi-schema.yaml` defines `requestBody` schemas for
@@ -43,14 +53,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   silently creating an empty job: `multiflexi-client` 1.1.0's create/update job endpoint
   (`JobApi.setjob_by_id`) has no request-body parameter, so job data could never reach
   the server.
-
-### Planned
-- OAuth2 authentication support
-- Connection pooling for better performance
-- Metrics and monitoring endpoints
-- Custom CA certificate support
-- Multiple backend support with load balancing
-- Improved error messages and retry logic
+- Slow cold-start import time: `client.py` imported `multiflexi_client` (the generated
+  OpenAPI SDK) at module scope, which eagerly loads all ~15 API classes and every model
+  class regardless of which are used, adding ~1.5-2s to every process start. Since
+  `multiflexi-mcp-server` is spawned fresh per connection by consumers like mcprack's
+  per-user HTTP proxy and must answer the MCP `initialize` handshake within a bounded
+  timeout, this was causing intermittent handshake-timeout failures. `multiflexi_client`
+  is now imported lazily inside each `MultiFleXiClient` method, deferring the cost to the
+  first real API call instead of paying it before the handshake responds. Total import
+  time of `multiflexi_mcp_server.server` drops from ~5s to well under 1s.
 
 ## [0.1.0] - 2026-02-01
 

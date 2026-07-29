@@ -309,6 +309,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog
 
+See [CHANGELOG.md](CHANGELOG.md) for the full history. Highlights:
+
+### v0.2.0
+- Fixed slow cold-start import time: `multiflexi_client` (the generated API SDK)
+  is now imported lazily on first use instead of at module load, cutting
+  process startup from ~5s to well under 1s -- this matters because the server
+  is spawned fresh per connection by consumers with a bounded handshake timeout.
+- Added `update_credential`, `update_credential_type`, and `update_topic` tools
+- Fixed several API method/response mismatches against `multiflexi-client`
+
 ### v0.1.0 (Initial Release)
 - Basic MCP server implementation
 - MultiFlexi API integration

@@ -1,15 +1,17 @@
 """MultiFlexi API client wrapper for MCP Server."""
 
+from __future__ import annotations
+
 import datetime
 import logging
 from contextlib import contextmanager
-from typing import Any, Dict, List, Optional, Union
-
-import multiflexi_client
-from multiflexi_client.configuration import Configuration as MultiFlexiApiConfiguration
-from multiflexi_client.rest import ApiException
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from .config import MultiFleXiConfig
+
+if TYPE_CHECKING:
+    from multiflexi_client.configuration import Configuration as MultiFlexiApiConfiguration
+    from multiflexi_client.rest import ApiException
 
 
 logger = logging.getLogger(__name__)
@@ -39,6 +41,8 @@ class MultiFleXiClient:
         constructs the wrong object and every API call fails with a pydantic
         ValidationError as soon as ``username``/``password`` are assigned.
         """
+        from multiflexi_client.configuration import Configuration as MultiFlexiApiConfiguration
+
         configuration = MultiFlexiApiConfiguration(host=self.config.host)
 
         # Configure authentication if credentials are provided
@@ -53,6 +57,8 @@ class MultiFleXiClient:
     @contextmanager
     def get_api_client(self):
         """Get configured MultiFlexi API client as context manager."""
+        import multiflexi_client
+
         configuration = self.get_configuration()
         with multiflexi_client.ApiClient(configuration) as api_client:
             yield api_client
@@ -107,6 +113,8 @@ class MultiFleXiClient:
     # Application methods
     def get_apps(self, format_type: str = "json", limit: Optional[int] = None) -> Dict[str, Any]:
         """Get list of applications."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.AppApi(api_client)
@@ -117,6 +125,8 @@ class MultiFleXiClient:
     
     def get_app_by_id(self, app_id: int, format_type: str = "json", limit: Optional[int] = None) -> Dict[str, Any]:
         """Get application by ID."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.AppApi(api_client)
@@ -128,6 +138,8 @@ class MultiFleXiClient:
     # Job methods
     def get_jobs(self, format_type: str = "json", limit: Optional[int] = None) -> Dict[str, Any]:
         """Get list of jobs."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.JobApi(api_client)
@@ -138,6 +150,8 @@ class MultiFleXiClient:
 
     def get_job_by_id(self, job_id: int, format_type: str = "json", limit: Optional[int] = None) -> Dict[str, Any]:
         """Get job by ID."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.JobApi(api_client)
@@ -160,6 +174,8 @@ class MultiFleXiClient:
         ``JobApi.setjob_by_id`` accepts a ``SetjobByIdRequest`` body -- the
         currently-published 1.1.0 has no request-body parameter at all.
         """
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.JobApi(api_client)
@@ -182,6 +198,8 @@ class MultiFleXiClient:
         across all jobs, not one job's state. Status for a single job is derived
         here from its ``begin``/``end``/``exitcode`` fields instead.
         """
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.JobApi(api_client)
@@ -210,6 +228,8 @@ class MultiFleXiClient:
     # Company methods
     def get_companies(self, format_type: str = "json", limit: Optional[int] = None) -> Dict[str, Any]:
         """Get list of companies."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.CompanyApi(api_client)
@@ -220,6 +240,8 @@ class MultiFleXiClient:
     
     def get_company_by_id(self, company_id: int, format_type: str = "json", limit: Optional[int] = None) -> Dict[str, Any]:
         """Get company by ID."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.CompanyApi(api_client)
@@ -231,6 +253,8 @@ class MultiFleXiClient:
     # User methods
     def get_users(self, format_type: str = "json", limit: Optional[int] = None) -> Dict[str, Any]:
         """Get list of users."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.UserApi(api_client)
@@ -241,6 +265,8 @@ class MultiFleXiClient:
     
     def get_user_by_id(self, user_id: int, format_type: str = "json", limit: Optional[int] = None) -> Dict[str, Any]:
         """Get user by ID."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.UserApi(api_client)
@@ -252,6 +278,8 @@ class MultiFleXiClient:
     # Run Template methods
     def get_runtemplates(self, format_type: str = "json", limit: Optional[int] = None) -> Dict[str, Any]:
         """Get list of run templates."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.RuntemplateApi(api_client)
@@ -262,6 +290,8 @@ class MultiFleXiClient:
 
     def get_runtemplate_by_id(self, template_id: int, format_type: str = "json", limit: Optional[int] = None) -> Dict[str, Any]:
         """Get run template by ID."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.RuntemplateApi(api_client)
@@ -279,6 +309,8 @@ class MultiFleXiClient:
         in ``template_data`` are silently ignored by pydantic model construction
         (the model's default ``extra="ignore"``), not rejected.
         """
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.RuntemplateApi(api_client)
@@ -297,6 +329,8 @@ class MultiFleXiClient:
         order: Optional[str] = None,
     ) -> Any:
         """List all companies."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.CompanyApi(api_client)
@@ -314,6 +348,8 @@ class MultiFleXiClient:
         order: Optional[str] = None,
     ) -> Any:
         """List users assigned to a company."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.UserCompanyApi(api_client)
@@ -326,6 +362,8 @@ class MultiFleXiClient:
 
     def assign_user_to_company(self, company_id: int, user_id: int, role: str = "viewer") -> Any:
         """Assign a user to a company with a given access role."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.UserCompanyApi(api_client)
@@ -337,6 +375,8 @@ class MultiFleXiClient:
 
     def unassign_user_from_company(self, company_id: int, user_id: int) -> Any:
         """Remove a user's assignment from a company."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.UserCompanyApi(api_client)
@@ -348,6 +388,8 @@ class MultiFleXiClient:
     # User listing / role methods
     def list_users(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
         """List all users."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.UserApi(api_client)
@@ -358,6 +400,8 @@ class MultiFleXiClient:
 
     def get_user_roles(self, user_id: int, format_type: str = "json") -> Any:
         """Get the RBAC roles assigned to a user."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.UserRoleApi(api_client)
@@ -372,6 +416,8 @@ class MultiFleXiClient:
         ``replace=True`` (the API default) removes any existing roles not in
         ``roles``; set ``replace=False`` to add roles without revoking others.
         """
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.UserRoleApi(api_client)
@@ -384,6 +430,8 @@ class MultiFleXiClient:
     # Credential methods
     def list_credentials(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
         """List all credentials visible to the authenticated user."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.CredentialApi(api_client)
@@ -402,6 +450,8 @@ class MultiFleXiClient:
         credential. Passed through as-is; empty string works against the
         current server implementation.
         """
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.CredentialApi(api_client)
@@ -415,6 +465,8 @@ class MultiFleXiClient:
 
         ``credential_data`` may include ``name``, ``company_id``, ``type``, ``value``.
         """
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.CredentialApi(api_client)
@@ -427,6 +479,8 @@ class MultiFleXiClient:
     # CredentialType methods
     def list_credential_types(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
         """List all credential types."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.CredentialTypeApi(api_client)
@@ -437,6 +491,8 @@ class MultiFleXiClient:
 
     def get_credential_type(self, credential_type_id: int, format_type: str = "json") -> Any:
         """Get a credential type by ID."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.CredentialTypeApi(api_client)
@@ -450,6 +506,8 @@ class MultiFleXiClient:
 
         ``credential_type_data`` may include ``name``, ``description``, ``url``, ``logo``.
         """
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.CredentialTypeApi(api_client)
@@ -462,6 +520,8 @@ class MultiFleXiClient:
     # Topic methods
     def list_topics(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
         """List all topics (capability contracts required/provided by apps and credentials)."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.TopicApi(api_client)
@@ -472,6 +532,8 @@ class MultiFleXiClient:
 
     def get_topic(self, topic_id: int, format_type: str = "json") -> Any:
         """Get a topic by ID."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.TopicApi(api_client)
@@ -485,6 +547,8 @@ class MultiFleXiClient:
 
         ``topic_data`` may include ``name``, ``color``.
         """
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.TopicApi(api_client)
@@ -497,6 +561,8 @@ class MultiFleXiClient:
     # EventSource methods
     def list_event_sources(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
         """List all event sources (webhook adapters feeding EventRules)."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.EventsourceApi(api_client)
@@ -507,6 +573,8 @@ class MultiFleXiClient:
 
     def get_event_source(self, event_source_id: int, format_type: str = "json") -> Any:
         """Get an event source by ID."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.EventsourceApi(api_client)
@@ -517,6 +585,8 @@ class MultiFleXiClient:
 
     def set_event_source(self, event_source_data: Dict[str, Any], event_source_id: Optional[int] = None) -> Any:
         """Create (``event_source_id`` omitted) or update an event source."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.EventsourceApi(api_client)
@@ -528,6 +598,8 @@ class MultiFleXiClient:
 
     def delete_event_source(self, event_source_id: int, format_type: str = "json") -> Any:
         """Delete an event source by ID."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.EventsourceApi(api_client)
@@ -538,6 +610,8 @@ class MultiFleXiClient:
 
     def test_event_source_connection(self, event_source_id: int, format_type: str = "json") -> Any:
         """Live-test connectivity/credentials for an event source."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.EventsourceApi(api_client)
@@ -549,6 +623,8 @@ class MultiFleXiClient:
     # EventRule methods
     def list_event_rules(self, format_type: str = "json", limit: Optional[int] = None) -> Any:
         """List all event rules (bindings from EventSource changes to RunTemplate triggers)."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.EventruleApi(api_client)
@@ -559,6 +635,8 @@ class MultiFleXiClient:
 
     def get_event_rule(self, event_rule_id: int, format_type: str = "json") -> Any:
         """Get an event rule by ID."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.EventruleApi(api_client)
@@ -569,6 +647,8 @@ class MultiFleXiClient:
 
     def set_event_rule(self, event_rule_data: Dict[str, Any], event_rule_id: Optional[int] = None) -> Any:
         """Create (``event_rule_id`` omitted) or update an event rule."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.EventruleApi(api_client)
@@ -580,6 +660,8 @@ class MultiFleXiClient:
 
     def delete_event_rule(self, event_rule_id: int, format_type: str = "json") -> Any:
         """Delete an event rule by ID."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.EventruleApi(api_client)
@@ -597,6 +679,8 @@ class MultiFleXiClient:
         limit: Optional[int] = None,
     ) -> Any:
         """List tasks (scheduling-window obligations), optionally filtered by state/runtemplate."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.TaskApi(api_client)
@@ -609,6 +693,8 @@ class MultiFleXiClient:
 
     def get_task(self, task_id: int, format_type: str = "json") -> Any:
         """Get a task by ID, including its job attempt history."""
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.TaskApi(api_client)
@@ -625,6 +711,8 @@ class MultiFleXiClient:
         authenticated user and has no per-category selection, so ``export_type``
         is accepted for interface compatibility but is not sent to the server.
         """
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.GdprApi(api_client)
@@ -641,6 +729,8 @@ class MultiFleXiClient:
         user's export history instead; ``export_id`` is echoed back in the result
         for the caller to match against it, but is not sent to the server.
         """
+        import multiflexi_client
+        from multiflexi_client.rest import ApiException
         try:
             with self.get_api_client() as api_client:
                 api_instance = multiflexi_client.GdprApi(api_client)
