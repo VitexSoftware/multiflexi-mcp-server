@@ -15,6 +15,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multiple backend support with load balancing
 - Improved error messages and retry logic
 
+## [0.3.0] - 2026-08-08
+
+### Added
+- MCP prompts capability: `diagnose_job_failure`, `task_fulfillment_report`, and
+  `gdpr_export_checklist`, each a guided workflow over existing tools.
+- `SKILL.md` describing a MultiFlexi operations skill built on this server's
+  tools.
+
+### Fixed
+- Server version reported in the MCP `initialize` handshake (and
+  `multiflexi_mcp_server.__version__`) was hardcoded to `0.1.0` and had drifted
+  from the actual package version; it's now read from installed package
+  metadata via `importlib.metadata`, so it can never drift again.
+- Default `MULTIFLEXI_HOST` was a non-functional SwaggerHub mock/virtual server,
+  contradicting the README/`.env.example`, which document a working public demo
+  server. The default now points at `https://demo.multiflexi.eu/api` (the
+  generated client's REST paths live under `/api`, not the domain root) with the
+  `demo`/`demo` account, so a zero-config install talks to a real backend.
+
 ## [0.2.0] - 2026-07-29
 
 ### Added

@@ -1,6 +1,12 @@
 """MultiFlexi MCP Server package initialization."""
 
-__version__ = "0.1.0"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("multiflexi-mcp-server")
+except PackageNotFoundError:
+    __version__ = "0.0.0+unknown"
+
 __author__ = "CyberVitexus"
 __email__ = "info@vitexsoftware.cz"
 

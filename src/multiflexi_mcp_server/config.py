@@ -9,15 +9,15 @@ class MultiFleXiConfig(BaseModel):
     """Configuration for MultiFlexi MCP Server."""
     
     host: str = Field(
-        default="https://virtserver.swaggerhub.com/VitexSoftware/MultiFlexi/1.0.0",
+        default="https://demo.multiflexi.eu/api",
         description="MultiFlexi API host URL"
     )
     username: Optional[str] = Field(
-        default=None,
+        default="demo",
         description="Username for basic authentication"
     )
     password: Optional[str] = Field(
-        default=None,
+        default="demo",
         description="Password for basic authentication"
     )
     verify_ssl: bool = Field(
@@ -50,8 +50,8 @@ class MultiFleXiConfig(BaseModel):
         """Create configuration from environment variables."""
         return cls(
             host=os.getenv("MULTIFLEXI_HOST", cls.model_fields['host'].default),
-            username=os.getenv("MULTIFLEXI_USERNAME"),
-            password=os.getenv("MULTIFLEXI_PASSWORD"),
+            username=os.getenv("MULTIFLEXI_USERNAME", cls.model_fields['username'].default),
+            password=os.getenv("MULTIFLEXI_PASSWORD", cls.model_fields['password'].default),
             verify_ssl=os.getenv("MULTIFLEXI_VERIFY_SSL", "true").lower() == "true",
             timeout=int(os.getenv("MULTIFLEXI_TIMEOUT", "30")),
             max_retries=int(os.getenv("MULTIFLEXI_MAX_RETRIES", "3")),

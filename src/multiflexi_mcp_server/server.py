@@ -11,8 +11,14 @@ from mcp.server.stdio import stdio_server
 from mcp_types import (
     CallToolRequestParams,
     CallToolResult,
+    GetPromptRequestParams,
+    GetPromptResult,
+    ListPromptsResult,
     ListResourcesResult,
     ListToolsResult,
+    Prompt,
+    PromptArgument,
+    PromptMessage,
     ReadResourceRequestParams,
     ReadResourceResult,
     Resource,
@@ -24,6 +30,7 @@ from mcp_types import (
     LoggingLevel,
 )
 
+from . import __version__
 from .config import MultiFleXiConfig
 from .client import MultiFleXiClient
 
@@ -918,6 +925,101 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
         )]
 
 
+async def list_prompts() -> List[Prompt]:
+    """List available MultiFlexi prompts."""
+    return [
+        Prompt(
+            name="diagnose_job_failure",
+            description=(
+                "Investigate why a MultiFlexi job failed and recommend whether "
+                "a retry is safe."
+            ),
+            arguments=[
+                PromptArgument(
+                    name="job_id",
+                    description="ID of the job to diagnose",
+                    required=True,
+                ),
+            ],
+        ),
+        Prompt(
+            name="task_fulfillment_report",
+            description=(
+                "Summarize whether scheduled RunTemplate obligations (Tasks) "
+                "were fulfilled on time, fulfilled late, failed, or missed."
+            ),
+            arguments=[
+                PromptArgument(
+                    name="runtemplate_id",
+                    description="Restrict the report to a single RunTemplate ID",
+                    required=False,
+                ),
+            ],
+        ),
+        Prompt(
+            name="gdpr_export_checklist",
+            description=(
+                "Request a GDPR data export and produce a compliance-ready "
+                "summary once it is ready."
+            ),
+            arguments=[
+                PromptArgument(
+                    name="export_type",
+                    description="Type of export to request (default: personal_data)",
+                    required=False,
+                ),
+            ],
+        ),
+    ]
+
+
+async def get_prompt(name: str, arguments: Dict[str, str]) -> GetPromptResult:
+    """Build a MultiFlexi prompt message by name."""
+    if name == "diagnose_job_failure":
+        job_id = arguments.get("job_id", "")
+        text = (
+            f"Diagnose why MultiFlexi job {job_id} failed. Call get_job_status "
+            f"and get_job for job_id={job_id} to gather its exit code, "
+            "stdout/stderr, and error details. Explain the root cause in plain "
+            "language, then recommend whether re-running it now via create_job "
+            "(same runtemplate_id) is likely to succeed, or whether it needs "
+            "manual intervention first (e.g. missing credentials, an "
+            "unreachable topic or service)."
+        )
+    elif name == "task_fulfillment_report":
+        runtemplate_id = arguments.get("runtemplate_id")
+        scope = f"RunTemplate {runtemplate_id}" if runtemplate_id else "all RunTemplates"
+        filter_hint = f"with runtemplate_id={runtemplate_id} " if runtemplate_id else ""
+        text = (
+            f"Produce a Task fulfilment report for {scope}. Call list_tasks "
+            f"{filter_hint}and summarize how many Tasks are in each state "
+            "(fulfilled, fulfilled_late, failed, missed, open, running). Call "
+            "out any fulfilled_late or missed Tasks by name/window, since those "
+            "are the obligations that were not met on time."
+        )
+    elif name == "gdpr_export_checklist":
+        export_type = arguments.get("export_type", "personal_data")
+        text = (
+            f"Request a GDPR data export of type '{export_type}' via "
+            "request_data_export, then poll get_export_status until it "
+            "completes. Summarize the result as a compliance record: what was "
+            "exported, when it was requested, when it completed, and where the "
+            "export can be retrieved."
+        )
+    else:
+        text = f"Unknown prompt: {name}"
+
+    return GetPromptResult(
+        description=f"MultiFlexi prompt: {name}",
+        messages=[
+            PromptMessage(
+                role="user",
+                content=TextContent(type="text", text=text),
+            )
+        ],
+    )
+
+
 # mcp 2.0's lowlevel Server dropped the @app.list_resources()/@app.read_resource()/
 # @app.list_tools()/@app.call_tool() decorator style in favor of on_* callbacks
 # passed to the Server constructor, with a (context, params) signature and typed
@@ -943,12 +1045,23 @@ async def _on_call_tool(context, params: CallToolRequestParams) -> CallToolResul
     return CallToolResult(content=content)
 
 
+async def _on_list_prompts(context, params) -> ListPromptsResult:
+    return ListPromptsResult(prompts=await list_prompts())
+
+
+async def _on_get_prompt(context, params: GetPromptRequestParams) -> GetPromptResult:
+    return await get_prompt(params.name, params.arguments or {})
+
+
 app = Server(
     "multiflexi-mcp-server",
+    version=__version__,
     on_list_resources=_on_list_resources,
     on_read_resource=_on_read_resource,
     on_list_tools=_on_list_tools,
     on_call_tool=_on_call_tool,
+    on_list_prompts=_on_list_prompts,
+    on_get_prompt=_on_get_prompt,
 )
 
 
@@ -964,7 +1077,7 @@ async def run_server() -> None:
             write_stream,
             InitializationOptions(
                 server_name="multiflexi-mcp-server",
-                server_version="0.1.0",
+                server_version=__version__,
                 capabilities=app.get_capabilities(
                     notification_options=NotificationOptions(),
                     experimental_capabilities={}

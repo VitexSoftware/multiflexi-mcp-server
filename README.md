@@ -43,16 +43,21 @@ The server can be configured using environment variables:
 
 ### Required Configuration
 
-- `MULTIFLEXI_HOST`: MultiFlexi API host URL (default: demo server)
+- `MULTIFLEXI_HOST`: MultiFlexi API host URL (default: `https://demo.multiflexi.eu/api`, the public demo server)
 
 ### Optional Configuration
 
-- `MULTIFLEXI_USERNAME`: Username for basic authentication
-- `MULTIFLEXI_PASSWORD`: Password for basic authentication
+- `MULTIFLEXI_USERNAME`: Username for basic authentication (default: `demo`, matching the demo server)
+- `MULTIFLEXI_PASSWORD`: Password for basic authentication (default: `demo`, matching the demo server)
 - `MULTIFLEXI_VERIFY_SSL`: Whether to verify SSL certificates (default: true)
 - `MULTIFLEXI_TIMEOUT`: Request timeout in seconds (default: 30)
 - `MULTIFLEXI_MAX_RETRIES`: Maximum number of retries (default: 3)
 - `MULTIFLEXI_DEBUG`: Enable debug logging (default: false)
+
+Out of the box (no environment variables set) the server talks to the public
+`demo.multiflexi.eu` instance with the shared `demo`/`demo` account, so it works
+without any setup. For any real deployment, set at least `MULTIFLEXI_HOST` and
+your own `MULTIFLEXI_USERNAME`/`MULTIFLEXI_PASSWORD` to override these defaults.
 
 ### Example Configuration
 
@@ -106,6 +111,15 @@ The server provides the following resources:
 - `multiflexi://eventsources` - List of event sources
 - `multiflexi://eventrules` - List of event rules
 - `multiflexi://tasks` - List of tasks (per-window fulfilment obligations)
+
+### Available Prompts
+
+- `diagnose_job_failure` (`job_id`) - Investigate why a job failed and whether a
+  retry is safe
+- `task_fulfillment_report` (`runtemplate_id`, optional) - Summarize Task states
+  (fulfilled/fulfilled_late/failed/missed) for one or all RunTemplates
+- `gdpr_export_checklist` (`export_type`, optional) - Request a GDPR data export
+  and produce a compliance-ready summary once it completes
 
 ### Available Tools
 

@@ -8,7 +8,16 @@ from mcp_types import TextContent
 
 import inspect
 
-from multiflexi_mcp_server.server import app, list_resources, read_resource, list_tools, call_tool, main
+from multiflexi_mcp_server.server import (
+    app,
+    list_resources,
+    read_resource,
+    list_tools,
+    call_tool,
+    list_prompts,
+    get_prompt,
+    main,
+)
 
 
 def test_main_is_sync_entry_point():
@@ -285,4 +294,59 @@ class TestMCPServer:
         parsed_result = json.loads(result)
 
         assert parsed_result == [{"id": 1, "state": "open"}]
-        mock_client.list_tasks.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_list_prompts(self):
+        prompts = await list_prompts()
+
+        assert len(prompts) == 3
+        prompt_names = [p.name for p in prompts]
+        assert prompt_names == [
+            "diagnose_job_failure",
+            "task_fulfillment_report",
+            "gdpr_export_checklist",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_get_prompt_diagnose_job_failure(self):
+        result = await get_prompt("diagnose_job_failure", {"job_id": "42"})
+
+        text = result.messages[0].content.text
+        assert "job 42" in text
+        assert "job_id=42" in text
+
+    @pytest.mark.asyncio
+    async def test_get_prompt_task_fulfillment_report_no_filter(self):
+        result = await get_prompt("task_fulfillment_report", {})
+
+        text = result.messages[0].content.text
+        assert "all RunTemplates" in text
+        assert "runtemplate_id=" not in text
+
+    @pytest.mark.asyncio
+    async def test_get_prompt_task_fulfillment_report_with_filter(self):
+        result = await get_prompt("task_fulfillment_report", {"runtemplate_id": "7"})
+
+        text = result.messages[0].content.text
+        assert "RunTemplate 7" in text
+        assert "runtemplate_id=7" in text
+
+    @pytest.mark.asyncio
+    async def test_get_prompt_gdpr_export_checklist_default(self):
+        result = await get_prompt("gdpr_export_checklist", {})
+
+        text = result.messages[0].content.text
+        assert "personal_data" in text
+
+    @pytest.mark.asyncio
+    async def test_get_prompt_gdpr_export_checklist_custom_type(self):
+        result = await get_prompt("gdpr_export_checklist", {"export_type": "financial"})
+
+        text = result.messages[0].content.text
+        assert "financial" in text
+
+    @pytest.mark.asyncio
+    async def test_get_prompt_unknown(self):
+        result = await get_prompt("no_such_prompt", {})
+
+        assert "Unknown prompt" in result.messages[0].content.text

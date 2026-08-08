@@ -13,10 +13,10 @@ class TestMultiFleXiConfig:
     def test_default_values(self):
         """Test default configuration values."""
         config = MultiFleXiConfig()
-        
-        assert config.host == "https://virtserver.swaggerhub.com/VitexSoftware/MultiFlexi/1.0.0"
-        assert config.username is None
-        assert config.password is None
+
+        assert config.host == "https://demo.multiflexi.eu/api"
+        assert config.username == "demo"
+        assert config.password == "demo"
         assert config.verify_ssl is True
         assert config.timeout == 30
         assert config.max_retries == 3
@@ -62,16 +62,20 @@ class TestMultiFleXiConfig:
     def test_has_auth(self):
         """Test authentication credential checking."""
         # No credentials
-        config = MultiFleXiConfig()
+        config = MultiFleXiConfig(username=None, password=None)
         assert config.has_auth() is False
-        
+
         # Only username
-        config = MultiFleXiConfig(username="testuser")
+        config = MultiFleXiConfig(username="testuser", password=None)
         assert config.has_auth() is False
-        
+
         # Only password
-        config = MultiFleXiConfig(password="testpass")
+        config = MultiFleXiConfig(username=None, password="testpass")
         assert config.has_auth() is False
+
+        # Defaults (demo/demo)
+        config = MultiFleXiConfig()
+        assert config.has_auth() is True
         
         # Both credentials
         config = MultiFleXiConfig(username="testuser", password="testpass")
@@ -102,10 +106,10 @@ class TestMultiFleXiConfig:
     def test_from_env_defaults(self):
         """Test configuration from environment with defaults."""
         config = MultiFleXiConfig.from_env()
-        
-        assert config.host == "https://virtserver.swaggerhub.com/VitexSoftware/MultiFlexi/1.0.0"
-        assert config.username is None
-        assert config.password is None
+
+        assert config.host == "https://demo.multiflexi.eu/api"
+        assert config.username == "demo"
+        assert config.password == "demo"
         assert config.verify_ssl is True
         assert config.timeout == 30
         assert config.max_retries == 3

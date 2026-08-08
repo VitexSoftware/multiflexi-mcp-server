@@ -1,3 +1,18 @@
+multiflexi-mcp-server (0.3.0-1) unstable; urgency=medium
+
+  * Fix server version reported in the MCP handshake drifting from the
+    package version (now read via importlib.metadata instead of a
+    hardcoded string).
+  * Fix default MULTIFLEXI_HOST pointing at a non-functional SwaggerHub
+    mock server instead of the documented public demo server; now
+    defaults to https://demo.multiflexi.eu/api with demo/demo
+    credentials so a zero-config install works out of the box.
+  * Add MCP prompts capability: diagnose_job_failure,
+    task_fulfillment_report, gdpr_export_checklist.
+  * Add SKILL.md describing a MultiFlexi operations skill.
+
+ -- Vítězslav Dvořák <info@vitexsoftware.cz>  Sat, 08 Aug 2026 18:00:00 +0200
+
 multiflexi-mcp-server (0.2.0-1) unstable; urgency=medium
 
   * Lazily import multiflexi_client in client.py to fix ~5s cold-start
