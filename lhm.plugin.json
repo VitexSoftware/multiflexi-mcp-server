@@ -1,0 +1,958 @@
+{
+  "author": "CyberVitexus",
+  "authorUrl": "https://github.com/VitexSoftware",
+  "category": "developer",
+  "description": "MCP (Model Context Protocol) server for MultiFlexi API integration. Provides tools, resources, and prompts for interacting with MultiFlexi applications, jobs, companies, users, run templates, credentials, event rules, tasks, and GDPR data export.",
+  "homepage": "https://github.com/VitexSoftware/multiflexi-mcp-server",
+  "identifier": "vitexsoftware-multiflexi-mcp-server",
+  "name": "MultiFlexi MCP Server",
+  "prompts": [
+    {
+      "arguments": [
+        {
+          "description": "ID of the job to diagnose",
+          "name": "job_id",
+          "required": true
+        }
+      ],
+      "description": "Investigate why a MultiFlexi job failed and recommend whether a retry is safe.",
+      "name": "diagnose_job_failure"
+    },
+    {
+      "arguments": [
+        {
+          "description": "Restrict the report to a single RunTemplate ID",
+          "name": "runtemplate_id",
+          "required": false
+        }
+      ],
+      "description": "Summarize whether scheduled RunTemplate obligations (Tasks) were fulfilled on time, fulfilled late, failed, or missed.",
+      "name": "task_fulfillment_report"
+    },
+    {
+      "arguments": [
+        {
+          "description": "Type of export to request (default: personal_data)",
+          "name": "export_type",
+          "required": false
+        }
+      ],
+      "description": "Request a GDPR data export and produce a compliance-ready summary once it is ready.",
+      "name": "gdpr_export_checklist"
+    }
+  ],
+  "resources": [
+    {
+      "description": "List of MultiFlexi applications",
+      "mimeType": "application/json",
+      "name": "Applications",
+      "uri": "multiflexi://apps"
+    },
+    {
+      "description": "List of MultiFlexi jobs",
+      "mimeType": "application/json",
+      "name": "Jobs",
+      "uri": "multiflexi://jobs"
+    },
+    {
+      "description": "List of MultiFlexi companies",
+      "mimeType": "application/json",
+      "name": "Companies",
+      "uri": "multiflexi://companies"
+    },
+    {
+      "description": "List of MultiFlexi users",
+      "mimeType": "application/json",
+      "name": "Users",
+      "uri": "multiflexi://users"
+    },
+    {
+      "description": "List of MultiFlexi run templates",
+      "mimeType": "application/json",
+      "name": "Run Templates",
+      "uri": "multiflexi://runtemplates"
+    },
+    {
+      "description": "List of MultiFlexi credentials",
+      "mimeType": "application/json",
+      "name": "Credentials",
+      "uri": "multiflexi://credentials"
+    },
+    {
+      "description": "List of MultiFlexi credential types",
+      "mimeType": "application/json",
+      "name": "Credential Types",
+      "uri": "multiflexi://credential_types"
+    },
+    {
+      "description": "List of MultiFlexi topics (capability contracts)",
+      "mimeType": "application/json",
+      "name": "Topics",
+      "uri": "multiflexi://topics"
+    },
+    {
+      "description": "List of MultiFlexi event sources",
+      "mimeType": "application/json",
+      "name": "Event Sources",
+      "uri": "multiflexi://eventsources"
+    },
+    {
+      "description": "List of MultiFlexi event rules",
+      "mimeType": "application/json",
+      "name": "Event Rules",
+      "uri": "multiflexi://eventrules"
+    },
+    {
+      "description": "List of MultiFlexi tasks (per-window fulfilment obligations)",
+      "mimeType": "application/json",
+      "name": "Tasks",
+      "uri": "multiflexi://tasks"
+    }
+  ],
+  "tags": [
+    "mcp",
+    "multiflexi",
+    "model-context-protocol",
+    "api",
+    "automation",
+    "jobs"
+  ],
+  "tools": [
+    {
+      "description": "Get a specific MultiFlexi application by ID",
+      "inputSchema": {
+        "properties": {
+          "app_id": {
+            "type": "integer",
+            "description": "ID of the application to retrieve"
+          },
+          "format": {
+            "type": "string",
+            "description": "Response format (json, html, xml)",
+            "default": "json"
+          }
+        },
+        "required": [
+          "app_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_app"
+    },
+    {
+      "description": "Get a specific MultiFlexi job by ID",
+      "inputSchema": {
+        "properties": {
+          "job_id": {
+            "type": "integer",
+            "description": "ID of the job to retrieve"
+          },
+          "format": {
+            "type": "string",
+            "description": "Response format (json, html, xml)",
+            "default": "json"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_job"
+    },
+    {
+      "description": "Schedule a job from a RunTemplate (mirrors 'run-template:schedule')",
+      "inputSchema": {
+        "properties": {
+          "runtemplate_id": {
+            "type": "integer",
+            "description": "ID of the RunTemplate to schedule"
+          },
+          "scheduled": {
+            "type": "string",
+            "description": "'now' or a 'Y-m-d H:i:s' timestamp",
+            "default": "now"
+          },
+          "executor": {
+            "type": "string",
+            "description": "Overrides the RunTemplate executor (e.g. Native, Docker)"
+          },
+          "env": {
+            "type": "object",
+            "description": "Environment variable overrides (KEY=>VALUE) injected into the job",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "runtemplate_id"
+        ],
+        "type": "object"
+      },
+      "name": "create_job"
+    },
+    {
+      "description": "Get the status of a MultiFlexi job",
+      "inputSchema": {
+        "properties": {
+          "job_id": {
+            "type": "integer",
+            "description": "ID of the job to check"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_job_status"
+    },
+    {
+      "description": "Get a specific MultiFlexi company by ID",
+      "inputSchema": {
+        "properties": {
+          "company_id": {
+            "type": "integer",
+            "description": "ID of the company to retrieve"
+          },
+          "format": {
+            "type": "string",
+            "description": "Response format (json, html, xml)",
+            "default": "json"
+          }
+        },
+        "required": [
+          "company_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_company"
+    },
+    {
+      "description": "Get a specific MultiFlexi user by ID",
+      "inputSchema": {
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "description": "ID of the user to retrieve"
+          },
+          "format": {
+            "type": "string",
+            "description": "Response format (json, html, xml)",
+            "default": "json"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_user"
+    },
+    {
+      "description": "Get a specific MultiFlexi run template by ID",
+      "inputSchema": {
+        "properties": {
+          "template_id": {
+            "type": "integer",
+            "description": "ID of the run template to retrieve"
+          },
+          "format": {
+            "type": "string",
+            "description": "Response format (json, html, xml)",
+            "default": "json"
+          }
+        },
+        "required": [
+          "template_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_runtemplate"
+    },
+    {
+      "description": "Update a MultiFlexi run template",
+      "inputSchema": {
+        "properties": {
+          "template_id": {
+            "type": "integer",
+            "description": "ID of the run template to update"
+          },
+          "template_data": {
+            "type": "object",
+            "description": "Updated template data",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Template name"
+              },
+              "description": {
+                "type": "string",
+                "description": "Template description"
+              },
+              "command": {
+                "type": "string",
+                "description": "Command to execute"
+              },
+              "environment": {
+                "type": "object",
+                "description": "Environment variables"
+              }
+            }
+          }
+        },
+        "required": [
+          "template_id",
+          "template_data"
+        ],
+        "type": "object"
+      },
+      "name": "update_runtemplate"
+    },
+    {
+      "description": "Request GDPR data export for a user",
+      "inputSchema": {
+        "properties": {
+          "export_type": {
+            "type": "string",
+            "description": "Type of data export to request",
+            "enum": [
+              "personal_data",
+              "activity_logs",
+              "audit_trail"
+            ]
+          },
+          "format": {
+            "type": "string",
+            "description": "Export format",
+            "enum": [
+              "json",
+              "csv",
+              "xml"
+            ],
+            "default": "json"
+          }
+        },
+        "required": [
+          "export_type"
+        ],
+        "type": "object"
+      },
+      "name": "request_data_export"
+    },
+    {
+      "description": "Get the status of a data export request",
+      "inputSchema": {
+        "properties": {
+          "export_id": {
+            "type": "string",
+            "description": "ID of the export request"
+          }
+        },
+        "required": [
+          "export_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_export_status"
+    },
+    {
+      "description": "List all MultiFlexi companies",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of results"
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Number of records to skip"
+          },
+          "order": {
+            "type": "string",
+            "description": "Field to order by ('-' prefix for descending)"
+          }
+        },
+        "type": "object"
+      },
+      "name": "list_companies"
+    },
+    {
+      "description": "List users assigned to a company",
+      "inputSchema": {
+        "properties": {
+          "company_id": {
+            "type": "integer",
+            "description": "ID of the company"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of results"
+          }
+        },
+        "required": [
+          "company_id"
+        ],
+        "type": "object"
+      },
+      "name": "list_company_users"
+    },
+    {
+      "description": "Assign a user to a company with an access role",
+      "inputSchema": {
+        "properties": {
+          "company_id": {
+            "type": "integer",
+            "description": "ID of the company"
+          },
+          "user_id": {
+            "type": "integer",
+            "description": "ID of the user to assign"
+          },
+          "role": {
+            "type": "string",
+            "description": "Access role in the company",
+            "default": "viewer"
+          }
+        },
+        "required": [
+          "company_id",
+          "user_id"
+        ],
+        "type": "object"
+      },
+      "name": "assign_user_to_company"
+    },
+    {
+      "description": "Remove a user's assignment from a company",
+      "inputSchema": {
+        "properties": {
+          "company_id": {
+            "type": "integer",
+            "description": "ID of the company"
+          },
+          "user_id": {
+            "type": "integer",
+            "description": "ID of the user to remove"
+          }
+        },
+        "required": [
+          "company_id",
+          "user_id"
+        ],
+        "type": "object"
+      },
+      "name": "unassign_user_from_company"
+    },
+    {
+      "description": "List all MultiFlexi users",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of results"
+          }
+        },
+        "type": "object"
+      },
+      "name": "list_users"
+    },
+    {
+      "description": "Get the RBAC roles assigned to a user",
+      "inputSchema": {
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "description": "ID of the user"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_user_roles"
+    },
+    {
+      "description": "Assign RBAC roles to a user",
+      "inputSchema": {
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "description": "ID of the user"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of RBAC role names to assign"
+          },
+          "replace": {
+            "type": "boolean",
+            "description": "When true (default), existing roles not in the list are removed",
+            "default": true
+          }
+        },
+        "required": [
+          "user_id",
+          "roles"
+        ],
+        "type": "object"
+      },
+      "name": "set_user_roles"
+    },
+    {
+      "description": "List all credentials visible to the authenticated user",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of results"
+          }
+        },
+        "type": "object"
+      },
+      "name": "list_credentials"
+    },
+    {
+      "description": "Get a credential by ID",
+      "inputSchema": {
+        "properties": {
+          "credential_id": {
+            "type": "integer",
+            "description": "ID of the credential"
+          }
+        },
+        "required": [
+          "credential_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_credential"
+    },
+    {
+      "description": "Update a credential by ID",
+      "inputSchema": {
+        "properties": {
+          "credential_id": {
+            "type": "integer",
+            "description": "ID of the credential to update"
+          },
+          "credential_data": {
+            "type": "object",
+            "description": "Fields to update",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Credential name"
+              },
+              "company_id": {
+                "type": "integer",
+                "description": "Owning company ID"
+              },
+              "type": {
+                "type": "string",
+                "description": "Credential type",
+                "enum": [
+                  "password",
+                  "token",
+                  "certificate"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "Credential value"
+              }
+            }
+          }
+        },
+        "required": [
+          "credential_id",
+          "credential_data"
+        ],
+        "type": "object"
+      },
+      "name": "update_credential"
+    },
+    {
+      "description": "List all credential types",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of results"
+          }
+        },
+        "type": "object"
+      },
+      "name": "list_credential_types"
+    },
+    {
+      "description": "Get a credential type by ID",
+      "inputSchema": {
+        "properties": {
+          "credential_type_id": {
+            "type": "integer",
+            "description": "ID of the credential type"
+          }
+        },
+        "required": [
+          "credential_type_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_credential_type"
+    },
+    {
+      "description": "Update a credential type by ID",
+      "inputSchema": {
+        "properties": {
+          "credential_type_id": {
+            "type": "integer",
+            "description": "ID of the credential type to update"
+          },
+          "credential_type_data": {
+            "type": "object",
+            "description": "Fields to update",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Credential type name"
+              },
+              "description": {
+                "type": "string",
+                "description": "Description"
+              },
+              "url": {
+                "type": "string",
+                "description": "Reference URL"
+              },
+              "logo": {
+                "type": "string",
+                "description": "Logo URL/path"
+              }
+            }
+          }
+        },
+        "required": [
+          "credential_type_id",
+          "credential_type_data"
+        ],
+        "type": "object"
+      },
+      "name": "update_credential_type"
+    },
+    {
+      "description": "List all topics (capability contracts required by apps / provided by credentials)",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of results"
+          }
+        },
+        "type": "object"
+      },
+      "name": "list_topics"
+    },
+    {
+      "description": "Get a topic by ID",
+      "inputSchema": {
+        "properties": {
+          "topic_id": {
+            "type": "integer",
+            "description": "ID of the topic"
+          }
+        },
+        "required": [
+          "topic_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_topic"
+    },
+    {
+      "description": "Update a topic by ID",
+      "inputSchema": {
+        "properties": {
+          "topic_id": {
+            "type": "integer",
+            "description": "ID of the topic to update"
+          },
+          "topic_data": {
+            "type": "object",
+            "description": "Fields to update",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Topic name"
+              },
+              "color": {
+                "type": "string",
+                "description": "Hex color, e.g. #000000"
+              }
+            }
+          }
+        },
+        "required": [
+          "topic_id",
+          "topic_data"
+        ],
+        "type": "object"
+      },
+      "name": "update_topic"
+    },
+    {
+      "description": "List all event sources (webhook adapters feeding EventRules)",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of results"
+          }
+        },
+        "type": "object"
+      },
+      "name": "list_event_sources"
+    },
+    {
+      "description": "Get an event source by ID",
+      "inputSchema": {
+        "properties": {
+          "event_source_id": {
+            "type": "integer",
+            "description": "ID of the event source"
+          }
+        },
+        "required": [
+          "event_source_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_event_source"
+    },
+    {
+      "description": "Create or update an event source (omit event_source_id to create)",
+      "inputSchema": {
+        "properties": {
+          "event_source_id": {
+            "type": "integer",
+            "description": "ID to update; omit to create"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name"
+          },
+          "adapter_type": {
+            "type": "string",
+            "description": "Type of webhook adapter"
+          },
+          "db_connection": {
+            "type": "string",
+            "description": "Database driver"
+          },
+          "db_host": {
+            "type": "string",
+            "description": "Database host"
+          },
+          "db_port": {
+            "type": "string",
+            "description": "Database port"
+          },
+          "db_database": {
+            "type": "string",
+            "description": "Database name"
+          },
+          "db_username": {
+            "type": "string",
+            "description": "Database username"
+          },
+          "db_password": {
+            "type": "string",
+            "description": "Database password"
+          },
+          "poll_interval": {
+            "type": "integer",
+            "description": "Poll interval in seconds"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether this source is active"
+          }
+        },
+        "type": "object"
+      },
+      "name": "set_event_source"
+    },
+    {
+      "description": "Delete an event source by ID",
+      "inputSchema": {
+        "properties": {
+          "event_source_id": {
+            "type": "integer",
+            "description": "ID of the event source"
+          }
+        },
+        "required": [
+          "event_source_id"
+        ],
+        "type": "object"
+      },
+      "name": "delete_event_source"
+    },
+    {
+      "description": "Live-test connectivity/credentials for an event source",
+      "inputSchema": {
+        "properties": {
+          "event_source_id": {
+            "type": "integer",
+            "description": "ID of the event source to test"
+          }
+        },
+        "required": [
+          "event_source_id"
+        ],
+        "type": "object"
+      },
+      "name": "test_event_source_connection"
+    },
+    {
+      "description": "List all event rules (bindings from EventSource changes to RunTemplate triggers)",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of results"
+          }
+        },
+        "type": "object"
+      },
+      "name": "list_event_rules"
+    },
+    {
+      "description": "Get an event rule by ID",
+      "inputSchema": {
+        "properties": {
+          "event_rule_id": {
+            "type": "integer",
+            "description": "ID of the event rule"
+          }
+        },
+        "required": [
+          "event_rule_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_event_rule"
+    },
+    {
+      "description": "Create or update an event rule (omit event_rule_id to create)",
+      "inputSchema": {
+        "properties": {
+          "event_rule_id": {
+            "type": "integer",
+            "description": "ID to update; omit to create"
+          },
+          "event_source_id": {
+            "type": "integer",
+            "description": "References the EventSource"
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Evidence type pattern to match (omit for any)"
+          },
+          "operation": {
+            "type": "string",
+            "description": "Operation to match",
+            "default": "any"
+          },
+          "runtemplate_id": {
+            "type": "integer",
+            "description": "RunTemplate to trigger when rule matches"
+          },
+          "priority": {
+            "type": "integer",
+            "description": "Higher priority rules are evaluated first"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether this rule is active"
+          },
+          "env_mapping": {
+            "type": "string",
+            "description": "JSON mapping of change fields to environment variables"
+          }
+        },
+        "required": [
+          "runtemplate_id"
+        ],
+        "type": "object"
+      },
+      "name": "set_event_rule"
+    },
+    {
+      "description": "Delete an event rule by ID",
+      "inputSchema": {
+        "properties": {
+          "event_rule_id": {
+            "type": "integer",
+            "description": "ID of the event rule"
+          }
+        },
+        "required": [
+          "event_rule_id"
+        ],
+        "type": "object"
+      },
+      "name": "delete_event_rule"
+    },
+    {
+      "description": "List tasks (per-window fulfilment obligations spawned from RunTemplates)",
+      "inputSchema": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "description": "Filter by task state",
+            "enum": [
+              "open",
+              "running",
+              "fulfilled",
+              "fulfilled_late",
+              "failed",
+              "missed"
+            ]
+          },
+          "runtemplate_id": {
+            "type": "integer",
+            "description": "Filter by RunTemplate"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of results"
+          }
+        },
+        "type": "object"
+      },
+      "name": "list_tasks"
+    },
+    {
+      "description": "Get a task by ID, including its job attempt history",
+      "inputSchema": {
+        "properties": {
+          "task_id": {
+            "type": "integer",
+            "description": "ID of the task"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_task"
+    }
+  ],
+  "version": "0.3.0"
+}

@@ -1056,6 +1056,7 @@ async def _on_get_prompt(context, params: GetPromptRequestParams) -> GetPromptRe
 app = Server(
     "multiflexi-mcp-server",
     version=__version__,
+    description="MCP Server for MultiFlexi API integration",
     on_list_resources=_on_list_resources,
     on_read_resource=_on_read_resource,
     on_list_tools=_on_list_tools,
