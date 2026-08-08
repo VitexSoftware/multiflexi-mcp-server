@@ -6,6 +6,7 @@
 ![MCP: Model Context Protocol](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-orange)
 ![Packaging: deb](https://img.shields.io/badge/packaging-.deb-red?logo=debian&logoColor=white)
 ![Self-hosted](https://img.shields.io/badge/deployment-self--hosted%20%2F%20intranet-informational)
+[![MCP Badge](https://lobehub.com/badge/mcp/vitexsoftware-multiflexi-mcp-server)](https://lobehub.com/mcp/vitexsoftware-multiflexi-mcp-server)
 
 MCP (Model Context Protocol) Server for MultiFlexi API integration. This server provides tools and resources for interacting with MultiFlexi applications, jobs, companies, users, and run templates.
 
