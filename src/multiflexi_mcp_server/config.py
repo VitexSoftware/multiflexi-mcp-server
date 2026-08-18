@@ -9,15 +9,19 @@ class MultiFleXiConfig(BaseModel):
     """Configuration for MultiFlexi MCP Server."""
     
     host: str = Field(
-        default="https://demo.multiflexi.eu/api",
-        description="MultiFlexi API host URL"
+        description=(
+            "MultiFlexi API host URL. Must include the full API base path "
+            "(e.g. https://your-instance.example.com/api/VitexSoftware/MultiFlexi/1.0.0) "
+            "- the /VitexSoftware/MultiFlexi/1.0.0 segment is required by the "
+            "server's routing, it is not optional SwaggerHub boilerplate."
+        )
     )
     username: Optional[str] = Field(
-        default="demo",
+        default=None,
         description="Username for basic authentication"
     )
     password: Optional[str] = Field(
-        default="demo",
+        default=None,
         description="Password for basic authentication"
     )
     verify_ssl: bool = Field(
@@ -36,6 +40,14 @@ class MultiFleXiConfig(BaseModel):
         default=False,
         description="Enable debug logging"
     )
+    read_only: bool = Field(
+        default=True,
+        description=(
+            "When true (the default), all mutating tools (create/update/set/"
+            "delete/assign/unassign) are rejected before any API call is made. "
+            "Set MULTIFLEXI_READONLY=false to allow writes."
+        )
+    )
 
     @field_validator('host')
     @classmethod
@@ -48,14 +60,24 @@ class MultiFleXiConfig(BaseModel):
     @classmethod
     def from_env(cls) -> 'MultiFleXiConfig':
         """Create configuration from environment variables."""
+        host = os.getenv("MULTIFLEXI_HOST")
+
+        if not host:
+            raise RuntimeError(
+                "MULTIFLEXI_HOST is required - set it to your MultiFlexi "
+                "instance's full API base path, e.g. "
+                "https://your-host/api/VitexSoftware/MultiFlexi/1.0.0"
+            )
+
         return cls(
-            host=os.getenv("MULTIFLEXI_HOST", cls.model_fields['host'].default),
-            username=os.getenv("MULTIFLEXI_USERNAME", cls.model_fields['username'].default),
-            password=os.getenv("MULTIFLEXI_PASSWORD", cls.model_fields['password'].default),
+            host=host,
+            username=os.getenv("MULTIFLEXI_USERNAME"),
+            password=os.getenv("MULTIFLEXI_PASSWORD"),
             verify_ssl=os.getenv("MULTIFLEXI_VERIFY_SSL", "true").lower() == "true",
             timeout=int(os.getenv("MULTIFLEXI_TIMEOUT", "30")),
             max_retries=int(os.getenv("MULTIFLEXI_MAX_RETRIES", "3")),
             debug=os.getenv("MULTIFLEXI_DEBUG", "false").lower() == "true",
+            read_only=os.getenv("MULTIFLEXI_READONLY", "true").lower() == "true",
         )
 
     def has_auth(self) -> bool:

@@ -43,26 +43,35 @@ The server can be configured using environment variables:
 
 ### Required Configuration
 
-- `MULTIFLEXI_HOST`: MultiFlexi API host URL (default: `https://demo.multiflexi.eu/api`, the public demo server)
+- `MULTIFLEXI_HOST`: MultiFlexi API host URL. No default - the server refuses to
+  start without it. Must include the full API base path, e.g.
+  `https://your-instance.example.com/api/VitexSoftware/MultiFlexi/1.0.0`; the
+  `/VitexSoftware/MultiFlexi/1.0.0` segment is required by the server's routing.
 
 ### Optional Configuration
 
-- `MULTIFLEXI_USERNAME`: Username for basic authentication (default: `demo`, matching the demo server)
-- `MULTIFLEXI_PASSWORD`: Password for basic authentication (default: `demo`, matching the demo server)
+- `MULTIFLEXI_USERNAME`: Username for basic authentication
+- `MULTIFLEXI_PASSWORD`: Password for basic authentication
 - `MULTIFLEXI_VERIFY_SSL`: Whether to verify SSL certificates (default: true)
 - `MULTIFLEXI_TIMEOUT`: Request timeout in seconds (default: 30)
 - `MULTIFLEXI_MAX_RETRIES`: Maximum number of retries (default: 3)
 - `MULTIFLEXI_DEBUG`: Enable debug logging (default: false)
+- `MULTIFLEXI_READONLY`: When true (the default), all mutating tools
+  (create/update/set/delete/assign/unassign) are rejected before any API call
+  is made. Set to `false` to allow writes.
 
-Out of the box (no environment variables set) the server talks to the public
-`demo.multiflexi.eu` instance with the shared `demo`/`demo` account, so it works
-without any setup. For any real deployment, set at least `MULTIFLEXI_HOST` and
-your own `MULTIFLEXI_USERNAME`/`MULTIFLEXI_PASSWORD` to override these defaults.
+There is no zero-config default: the server always requires an explicit
+`MULTIFLEXI_HOST` (and, unless your instance allows anonymous access,
+`MULTIFLEXI_USERNAME`/`MULTIFLEXI_PASSWORD`) so it never silently talks to an
+unintended backend. If you just want to try the server without your own
+MultiFlexi instance, VitexSoftware runs a public demo you can point at
+explicitly: `MULTIFLEXI_HOST=https://demo.multiflexi.eu/api` with
+`MULTIFLEXI_USERNAME=demo` / `MULTIFLEXI_PASSWORD=demo`.
 
 ### Example Configuration
 
 ```bash
-export MULTIFLEXI_HOST="https://your-multiflexi-instance.com"
+export MULTIFLEXI_HOST="https://your-multiflexi-instance.example.com/api/VitexSoftware/MultiFlexi/1.0.0"
 export MULTIFLEXI_USERNAME="your-username"
 export MULTIFLEXI_PASSWORD="your-password"
 export MULTIFLEXI_VERIFY_SSL="true"
@@ -87,7 +96,7 @@ Add the following to your Claude Desktop configuration (`~/Library/Application S
     "multiflexi": {
       "command": "multiflexi-mcp-server",
       "env": {
-        "MULTIFLEXI_HOST": "https://your-multiflexi-instance.com",
+        "MULTIFLEXI_HOST": "https://your-multiflexi-instance.example.com/api/VitexSoftware/MultiFlexi/1.0.0",
         "MULTIFLEXI_USERNAME": "your-username",
         "MULTIFLEXI_PASSWORD": "your-password"
       }

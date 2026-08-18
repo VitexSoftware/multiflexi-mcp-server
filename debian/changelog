@@ -1,3 +1,26 @@
+multiflexi-mcp-server (0.3.1-1) unstable; urgency=medium
+
+  * Revert 0.3.0's MULTIFLEXI_HOST/USERNAME/PASSWORD defaults
+    (https://demo.multiflexi.eu/api + demo/demo credentials): a
+    zero-config install that silently talks to a public shared demo
+    backend is a security footgun (easy to forget to override before
+    pointing a real deployment at it, and it normalizes shipping
+    credentials in defaults). The server now refuses to start with a
+    clear RuntimeError if MULTIFLEXI_HOST is unset, and no longer
+    defaults USERNAME/PASSWORD to "demo"/"demo".
+  * .env.example/README: document that MULTIFLEXI_HOST must include the
+    full API base path (.../api/VitexSoftware/MultiFlexi/1.0.0), which is
+    required by the server's routing, not optional boilerplate.
+  * Add MULTIFLEXI_READONLY (default: true). When enabled, all mutating
+    tools (create_job, update_runtemplate, request_data_export,
+    assign_user_to_company, unassign_user_from_company, set_user_roles,
+    update_credential, update_credential_type, update_topic,
+    set_event_source, delete_event_source, set_event_rule,
+    delete_event_rule) are rejected before any API call is made. Set to
+    false to allow writes.
+
+ -- Vítězslav Dvořák <info@vitexsoftware.cz>  Tue, 18 Aug 2026 00:00:00 +0200
+
 multiflexi-mcp-server (0.3.0-1) unstable; urgency=medium
 
   * Fix server version reported in the MCP handshake drifting from the

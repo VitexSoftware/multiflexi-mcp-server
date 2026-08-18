@@ -42,6 +42,25 @@ logger = logging.getLogger(__name__)
 config = MultiFleXiConfig.from_env()
 client = MultiFleXiClient(config)
 
+# Tools that create/modify/delete MultiFlexi state. Blocked when config.read_only
+# is true (the default) so the server never mutates data unless an operator
+# explicitly opts in via MULTIFLEXI_READONLY=false.
+MUTATING_TOOLS = {
+    "create_job",
+    "update_runtemplate",
+    "request_data_export",
+    "assign_user_to_company",
+    "unassign_user_from_company",
+    "set_user_roles",
+    "update_credential",
+    "update_credential_type",
+    "update_topic",
+    "set_event_source",
+    "delete_event_source",
+    "set_event_rule",
+    "delete_event_rule",
+}
+
 
 async def list_resources() -> List[Resource]:
     """List available MultiFlexi resources."""
@@ -759,6 +778,18 @@ async def list_tools() -> List[Tool]:
 async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
     """Handle tool calls for MultiFlexi operations."""
     try:
+        if config.read_only and name in MUTATING_TOOLS:
+            result = {
+                "error": True,
+                "message": (
+                    f"Tool '{name}' is disabled: the server is running in "
+                    "read-only mode (default). Set MULTIFLEXI_READONLY=false "
+                    "to allow writes."
+                ),
+                "tool": name,
+            }
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
         if name == "get_app":
             app_id = arguments["app_id"]
             format_type = arguments.get("format", "json")
@@ -1071,6 +1102,7 @@ async def run_server() -> None:
     logger.info(f"Starting MultiFlexi MCP Server")
     logger.info(f"Host: {config.host}")
     logger.info(f"Authentication: {'enabled' if config.has_auth() else 'disabled'}")
+    logger.info(f"Read-only mode: {'enabled' if config.read_only else 'DISABLED (writes allowed)'}")
 
     async with stdio_server() as (read_stream, write_stream):
         await app.run(
