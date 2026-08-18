@@ -12,15 +12,20 @@ class TestMultiFleXiConfig:
     
     def test_default_values(self):
         """Test default configuration values."""
-        config = MultiFleXiConfig()
+        config = MultiFleXiConfig(host="https://example.com")
 
-        assert config.host == "https://demo.multiflexi.eu/api"
-        assert config.username == "demo"
-        assert config.password == "demo"
+        assert config.username is None
+        assert config.password is None
         assert config.verify_ssl is True
         assert config.timeout == 30
         assert config.max_retries == 3
         assert config.debug is False
+        assert config.read_only is True
+
+    def test_host_is_required(self):
+        """host has no default - MultiFleXiConfig() without it must fail."""
+        with pytest.raises(ValueError):
+            MultiFleXiConfig()
     
     def test_custom_values(self):
         """Test custom configuration values."""
@@ -62,23 +67,23 @@ class TestMultiFleXiConfig:
     def test_has_auth(self):
         """Test authentication credential checking."""
         # No credentials
-        config = MultiFleXiConfig(username=None, password=None)
+        config = MultiFleXiConfig(host="https://example.com", username=None, password=None)
         assert config.has_auth() is False
 
         # Only username
-        config = MultiFleXiConfig(username="testuser", password=None)
+        config = MultiFleXiConfig(host="https://example.com", username="testuser", password=None)
         assert config.has_auth() is False
 
         # Only password
-        config = MultiFleXiConfig(username=None, password="testpass")
+        config = MultiFleXiConfig(host="https://example.com", username=None, password="testpass")
         assert config.has_auth() is False
 
-        # Defaults (demo/demo)
-        config = MultiFleXiConfig()
-        assert config.has_auth() is True
-        
+        # No auth by default (no username/password default)
+        config = MultiFleXiConfig(host="https://example.com")
+        assert config.has_auth() is False
+
         # Both credentials
-        config = MultiFleXiConfig(username="testuser", password="testpass")
+        config = MultiFleXiConfig(host="https://example.com", username="testuser", password="testpass")
         assert config.has_auth() is True
     
     @patch.dict(os.environ, {
@@ -103,14 +108,21 @@ class TestMultiFleXiConfig:
         assert config.debug is True
     
     @patch.dict(os.environ, {}, clear=True)
+    def test_from_env_requires_host(self):
+        """from_env() must raise a clear error when MULTIFLEXI_HOST is unset."""
+        with pytest.raises(RuntimeError, match="MULTIFLEXI_HOST"):
+            MultiFleXiConfig.from_env()
+
+    @patch.dict(os.environ, {"MULTIFLEXI_HOST": "https://env.example.com"}, clear=True)
     def test_from_env_defaults(self):
-        """Test configuration from environment with defaults."""
+        """Test configuration from environment with defaults besides host."""
         config = MultiFleXiConfig.from_env()
 
-        assert config.host == "https://demo.multiflexi.eu/api"
-        assert config.username == "demo"
-        assert config.password == "demo"
+        assert config.host == "https://env.example.com"
+        assert config.username is None
+        assert config.password is None
         assert config.verify_ssl is True
         assert config.timeout == 30
         assert config.max_retries == 3
         assert config.debug is False
+        assert config.read_only is True

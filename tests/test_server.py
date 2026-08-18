@@ -151,6 +151,19 @@ class TestMCPServer:
     
     @pytest.mark.asyncio
     @patch('multiflexi_mcp_server.server.client')
+    async def test_call_tool_blocks_mutating_tools_in_read_only_mode(self, mock_client):
+        """Mutating tools are rejected before touching the client when read_only is on (the default)."""
+        result = await call_tool("create_job", {"runtemplate_id": 5})
+
+        parsed_result = json.loads(result[0].text)
+        assert parsed_result["error"] is True
+        assert parsed_result["tool"] == "create_job"
+        assert "read-only" in parsed_result["message"]
+        mock_client.create_job.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch('multiflexi_mcp_server.server.config.read_only', False)
+    @patch('multiflexi_mcp_server.server.client')
     async def test_call_tool_create_job(self, mock_client):
         """Test create_job tool call."""
         mock_client.create_job.return_value = {"id": 1, "runtemplate_id": 5}
@@ -212,6 +225,7 @@ class TestMCPServer:
         mock_client.get_job_status.assert_called_once_with(1)
     
     @pytest.mark.asyncio
+    @patch('multiflexi_mcp_server.server.config.read_only', False)
     @patch('multiflexi_mcp_server.server.client')
     async def test_call_tool_request_data_export(self, mock_client):
         """Test request_data_export tool call."""
@@ -241,6 +255,7 @@ class TestMCPServer:
         mock_client.list_companies.assert_called_once_with(limit=10, offset=None, order=None)
 
     @pytest.mark.asyncio
+    @patch('multiflexi_mcp_server.server.config.read_only', False)
     @patch('multiflexi_mcp_server.server.client')
     async def test_call_tool_set_user_roles(self, mock_client):
         mock_client.set_user_roles.return_value = {"user_id": 1, "roles": ["admin"]}
@@ -252,6 +267,7 @@ class TestMCPServer:
         mock_client.set_user_roles.assert_called_once_with(1, ["admin"], False)
 
     @pytest.mark.asyncio
+    @patch('multiflexi_mcp_server.server.config.read_only', False)
     @patch('multiflexi_mcp_server.server.client')
     async def test_call_tool_set_event_source_strips_id_from_payload(self, mock_client):
         """event_source_id must route to the id kwarg, not leak into the data dict."""
